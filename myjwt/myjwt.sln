@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MistCentauri.MyJwt", "MistCentauri.MyJwt\MistCentauri.MyJwt.csproj", "{EC72FDC2-3190-485E-896F-1E06B227F330}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{56C75302-209B-4B83-9E0D-69A5CC9D8324}"
+	ProjectSection(SolutionItems) = preProject
+		docker-compose.yaml = docker-compose.yaml
+		..\README.md = ..\README.md
+		..\LICENSE = ..\LICENSE
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EC72FDC2-3190-485E-896F-1E06B227F330}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC72FDC2-3190-485E-896F-1E06B227F330}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC72FDC2-3190-485E-896F-1E06B227F330}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC72FDC2-3190-485E-896F-1E06B227F330}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
