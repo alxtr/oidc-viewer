@@ -1,41 +1,64 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services
+    .AddAuthentication(sharedOptions =>
+    {
+        sharedOptions.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        sharedOptions.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+    })
+    .AddCookie()
+    .AddOpenIdConnect(o =>
+    {
+        o.Authority = builder.Configuration["OpenIdConnect:Authority"];
+        o.ClientId = builder.Configuration["OpenIdConnect:ClientId"];
+        o.ClientSecret = builder.Configuration["OpenIdConnect:ClientSecret"];
+
+        o.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        o.ResponseType = OpenIdConnectResponseType.Code;
+        
+        o.SaveTokens = true;
+        o.GetClaimsFromUserInfoEndpoint = true;
+        o.MapInboundClaims = false;
+        o.TokenValidationParameters.NameClaimType = "name";
+        o.TokenValidationParameters.RoleClaimType = "role";
+    });
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
+app.UseDeveloperExceptionPage();
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 
-app.MapGet("/weatherforecast", () =>
+app.MapGet("/", async context =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    var response = context.Response;
+    response.ContentType = "text/html";
+    await response.WriteAsync("<html><body>");
+    await response.WriteAsync("Hello " + (context.User.Identity.Name ?? "anonymous") + "<br>");
+    foreach (var claim in context.User.Claims)
+    {
+        await response.WriteAsync(claim.Type + ": " + claim.Value + "<br>");
+    }
+
+    await response.WriteAsync("Tokens:<br>");
+
+    await response.WriteAsync("Access Token: " + await context.GetTokenAsync("access_token") + "<br>");
+    await response.WriteAsync("Refresh Token: " + await context.GetTokenAsync("refresh_token") + "<br>");
+    await response.WriteAsync("Token Type: " + await context.GetTokenAsync("token_type") + "<br>");
+    await response.WriteAsync("expires_at: " + await context.GetTokenAsync("expires_at") + "<br>");
+    await response.WriteAsync("<a href=\"/signout-oidc\">Logout</a><br>");
+    await response.WriteAsync("</body></html>");
+}).RequireAuthorization();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
