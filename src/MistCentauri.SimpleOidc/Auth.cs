@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -47,31 +46,14 @@ public static class Auth
     public static IEndpointRouteBuilder MapAuthenticationRoutes(this IEndpointRouteBuilder builder)
     {
         builder.MapGet(DeniedPath, () => Results.Redirect(RootPath + "?denied=true"));
-        builder.MapGet(SignOutPath, () => Results.Redirect(RootPath));
 
-        builder.MapPost(SignInPath, async (HttpContext context, IAntiforgery antiforgery) =>
-        {
-            if (!await antiforgery.IsRequestValidAsync(context))
-            {
-                return Results.Redirect(RootPath);
-            }
+        builder.MapGet(SignInPath, (HttpContext _) => Results.Challenge(
+            new() { RedirectUri = RootPath },
+            [OpenIdConnectDefaults.AuthenticationScheme]));
 
-            return Results.Challenge(
-                new() { RedirectUri = RootPath },
-                [OpenIdConnectDefaults.AuthenticationScheme]);
-        });
-
-        builder.MapPost(SignOutPath, async (HttpContext context, IAntiforgery antiforgery) =>
-        {
-            if (!await antiforgery.IsRequestValidAsync(context))
-            {
-                return Results.Redirect(RootPath);
-            }
-
-            return Results.SignOut(
-                new() { RedirectUri = RootPath },
-                [CookieAuthenticationDefaults.AuthenticationScheme]);
-        });
+        builder.MapGet(SignOutPath, (HttpContext _) => Results.SignOut(
+            new() { RedirectUri = RootPath },
+            [CookieAuthenticationDefaults.AuthenticationScheme]));
 
         return builder;
     }
