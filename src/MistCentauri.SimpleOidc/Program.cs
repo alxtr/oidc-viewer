@@ -20,7 +20,7 @@ builder.Services
 
         o.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
         o.ResponseType = OpenIdConnectResponseType.Code;
-        
+
         o.SaveTokens = true;
         o.GetClaimsFromUserInfoEndpoint = true;
         o.MapInboundClaims = false;
