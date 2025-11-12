@@ -1,0 +1,128 @@
+﻿@page
+@model IndexModel
+@using System.IdentityModel.Tokens.Jwt
+@using System.Text.Json
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@{
+    ViewData["Title"] = "Home";
+}
+
+@if (User.Identity?.IsAuthenticated ?? false)
+{
+    var atk = await HttpContext.GetTokenAsync("access_token");
+    var token = new JwtSecurityToken(jwtEncodedString: atk);
+
+    JsonDocument parsedHeader = JsonDocument.Parse(token.Header.SerializeToJson());
+    string formattedHeader = JsonSerializer.Serialize(parsedHeader.RootElement, new JsonSerializerOptions { WriteIndented = true });
+    
+    JsonDocument parsedPayload = JsonDocument.Parse(token.Payload.SerializeToJson());
+    string formattedPayload = JsonSerializer.Serialize(parsedPayload.RootElement, new JsonSerializerOptions { WriteIndented = true });
+    
+    <nav class="navbar">
+        <div class="container-fluid justify-content-end">
+            <form action="/signout" method="post" asp-antiforgery="true">
+                <button class="btn btn-outline-secondary" type="submit">Sign out</button>
+            </form>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row gx-5">
+            <div class="col">
+                <div class="p-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <table class="table">
+                                <tbody>
+                                <tr>
+                                    <td><strong>access_token:</strong></td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control" readonly
+                                                   value="@atk">
+                                            <button class="btn btn-outline-secondary" type="button"><i
+                                                    class="bi bi-clipboard"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @* <tr> *@
+                                @*     <td><strong>refresh_token:</strong></td> *@
+                                @*     <td> *@
+                                @*         <div class="input-group input-group-sm"> *@
+                                @*             <input type="text" class="form-control" readonly *@
+                                @*                    value="@await HttpContext.GetTokenAsync("refresh_token")"> *@
+                                @*             <button class="btn btn-outline-secondary" type="button"><i *@
+                                @*                     class="bi bi-clipboard"></i></button> *@
+                                @*         </div> *@
+                                @*     </td> *@
+                                @* </tr> *@
+                                @* <tr> *@
+                                @*     <td><strong>id_token:</strong></td> *@
+                                @*     <td> *@
+                                @*         <div class="input-group input-group-sm"> *@
+                                @*             <input type="text" class="form-control" readonly *@
+                                @*                    value="@await HttpContext.GetTokenAsync("id_token")"> *@
+                                @*             <button class="btn btn-outline-secondary" type="button"><i *@
+                                @*                     class="bi bi-clipboard"></i></button> *@
+                                @*         </div> *@
+                                @*     </td> *@
+                                @* </tr> *@
+                                <tr>
+                                    <td><strong>expires_at:</strong></td>
+                                    <td>
+                                        <div class="small">
+                                            @await HttpContext.GetTokenAsync("expires_at")
+                                        </div>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="p-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <pre class="font-monospace small">@formattedPayload</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container">
+        <div class="d-flex align-items-center vh-100">
+            <div class="mx-auto p-2 w-50">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <form action="/signin" method="post" asp-antiforgery="true">
+                            <div class="form-floating mb-3">
+                                <input type="url" class="form-control" id="authorityInput"
+                                       value="@Configuration["OidcSettings:Authority"]">
+                                <label for="authorityInput">Authority</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="clientIdInput"
+                                       value="@Configuration["OidcSettings:ClientId"]">
+                                <label for="clientIdInput">Client Id</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="scopeInput"
+                                       value="@Configuration["OidcSettings:Scopes"]">
+                                <label for="scopeInput">Scope</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Sign in</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

@@ -12,8 +12,10 @@ public static class Auth
     private const string SignInPath = "/signin";
     private const string SignOutPath = "/signout";
 
-    public static IServiceCollection AddOidc(this IServiceCollection builder, OpenIdConnectOptions options)
+    public static IServiceCollection AddOidc(this IServiceCollection builder, IConfiguration configuration)
     {
+        OidcSettings? oidcSettings = configuration.GetSection(nameof(OidcSettings)).Get<OidcSettings>();
+
         return builder
             .AddAuthentication(o =>
             {
@@ -27,20 +29,35 @@ public static class Auth
             })
             .AddOpenIdConnect(o =>
             {
-                o.Authority = options.Authority;
-                o.ClientId = options.ClientId;
-                o.ClientSecret = options.ClientSecret;
+                o.Authority = oidcSettings?.Authority;
+                o.ClientId = oidcSettings?.ClientId;
+                o.ClientSecret = oidcSettings?.ClientSecret;
+
+                o.Scope.Clear();
+                foreach (var scope in oidcSettings?.Scopes.Split(' ') ?? [])
+                {
+                    o.Scope.Add(scope);
+                }
 
                 o.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                o.ResponseType = OpenIdConnectResponseType.Code;
-
                 o.AccessDeniedPath = DeniedPath;
-                
+
+                o.UsePkce = true;
+                o.ResponseType = OpenIdConnectResponseType.Code;
                 o.SaveTokens = true;
-                o.GetClaimsFromUserInfoEndpoint = true;
-                o.MapInboundClaims = false;
-                o.TokenValidationParameters.NameClaimType = "name";
-                o.TokenValidationParameters.RoleClaimType = "role";
+
+                o.Events = new OpenIdConnectEvents()
+                {
+                    // Still needed?
+                    OnAuthenticationFailed = c =>
+                    {
+                        c.HandleResponse();
+
+                        c.Response.StatusCode = 500;
+                        c.Response.ContentType = "text/plain";
+                        return c.Response.WriteAsync(c.Exception.ToString());
+                    }
+                };
             }).Services;
     }
     
@@ -72,7 +89,6 @@ public static class Auth
                 new() { RedirectUri = RootPath },
                 [CookieAuthenticationDefaults.AuthenticationScheme]);
         });
-
 
         return builder;
     }
