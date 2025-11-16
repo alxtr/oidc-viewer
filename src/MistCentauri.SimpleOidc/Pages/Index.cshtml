@@ -47,28 +47,6 @@
                                         </div>
                                     </td>
                                 </tr>
-                                @* <tr> *@
-                                @*     <td><strong>refresh_token:</strong></td> *@
-                                @*     <td> *@
-                                @*         <div class="input-group input-group-sm"> *@
-                                @*             <input type="text" class="form-control" readonly *@
-                                @*                    value="@await HttpContext.GetTokenAsync("refresh_token")"> *@
-                                @*             <button class="btn btn-outline-secondary" type="button"><i *@
-                                @*                     class="bi bi-clipboard"></i></button> *@
-                                @*         </div> *@
-                                @*     </td> *@
-                                @* </tr> *@
-                                @* <tr> *@
-                                @*     <td><strong>id_token:</strong></td> *@
-                                @*     <td> *@
-                                @*         <div class="input-group input-group-sm"> *@
-                                @*             <input type="text" class="form-control" readonly *@
-                                @*                    value="@await HttpContext.GetTokenAsync("id_token")"> *@
-                                @*             <button class="btn btn-outline-secondary" type="button"><i *@
-                                @*                     class="bi bi-clipboard"></i></button> *@
-                                @*         </div> *@
-                                @*     </td> *@
-                                @* </tr> *@
                                 <tr>
                                     <td><strong>expires_at:</strong></td>
                                     <td>
@@ -104,19 +82,24 @@ else
                     <div class="card-body">
                         <form action="/signin" method="post" asp-antiforgery="true">
                             <div class="form-floating mb-3">
-                                <input type="url" class="form-control" id="authorityInput"
-                                       value="@Configuration["OidcSettings:Authority"]">
-                                <label for="authorityInput">Authority</label>
+                                <input type="url" class="form-control" id="authority"
+                                       value="@Configuration["OidcSettings:Authority"]" name="Authority">
+                                <label for="authority">Authority</label>
                             </div>
                             <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="clientIdInput"
-                                       value="@Configuration["OidcSettings:ClientId"]">
-                                <label for="clientIdInput">Client Id</label>
+                                <input type="text" class="form-control" id="clientId"
+                                       value="@Configuration["OidcSettings:ClientId"]" name="ClientId">
+                                <label for="clientId">Client Id</label>
                             </div>
                             <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="scopeInput"
-                                       value="@Configuration["OidcSettings:Scopes"]">
-                                <label for="scopeInput">Scope</label>
+                                <input type="password" class="form-control" id="clientSecret"
+                                       value="@Configuration["OidcSettings:ClientSecret"]" name="ClientSecret">
+                                <label for="clientSecret">Client Secret</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="scope"
+                                       value="@Configuration["OidcSettings:Scopes"]" name="Scopes">
+                                <label for="scope">Scope</label>
                             </div>
                             <button type="submit" class="btn btn-primary">Sign in</button>
                         </form>

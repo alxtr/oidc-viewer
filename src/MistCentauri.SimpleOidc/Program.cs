@@ -3,8 +3,7 @@ using MistCentauri.SimpleOidc;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
-    .AddOidc(builder.Configuration)
-    .AddAuthorization()
+    .AddOidc()
     .AddRazorPages();
 
 var app = builder.Build();
@@ -12,14 +11,12 @@ var app = builder.Build();
 app.UseHsts();
 app.UseHttpsRedirection();
 app.UseStatusCodePages();
-app.UseMiddleware<ExceptionMiddleware>();
+app.UseMiddleware<ExceptionMiddleware>(); // For debugging
 app.UseRouting();
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseAntiforgery();
 
-app.MapAuthenticationRoutes();
+app.MapOidc();
 app.MapStaticAssets();
-app.MapRazorPages()
-    .WithStaticAssets();
+app.MapRazorPages();
 
 app.Run();

@@ -12,7 +12,7 @@ public static class Auth
     private const string SignInPath = "/signin";
     private const string SignOutPath = "/signout";
 
-    public static IServiceCollection AddOidc(this IServiceCollection builder, IConfiguration configuration)
+    public static IServiceCollection AddOidcAuthentication(this IServiceCollection builder, IConfiguration configuration)
     {
         OidcSettings? oidcSettings = configuration.GetSection(nameof(OidcSettings)).Get<OidcSettings>();
 
@@ -48,7 +48,6 @@ public static class Auth
 
                 o.Events = new OpenIdConnectEvents()
                 {
-                    // Still needed?
                     OnAuthenticationFailed = c =>
                     {
                         c.HandleResponse();
@@ -72,7 +71,14 @@ public static class Auth
             {
                 return Results.Redirect(RootPath);
             }
-
+            
+            // Get .well-known
+            
+            // Create redirect uri from form post
+            
+            // 
+            
+            
             return Results.Challenge(
                 new() { RedirectUri = RootPath },
                 [OpenIdConnectDefaults.AuthenticationScheme]);
