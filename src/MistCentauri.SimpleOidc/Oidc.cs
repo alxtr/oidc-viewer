@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Primitives;
 
 namespace MistCentauri.SimpleOidc;
 
@@ -13,7 +14,7 @@ public static class Oidc
 {
     private const string RootPath = "/";
     private const string SignInPath = "/signin";
-    private const string CallbackPath = "/callback";
+    private const string CallbackPath = "/signin-callback";
 
     public static IServiceCollection AddOidc(this IServiceCollection services)
     {
@@ -66,6 +67,10 @@ public static class Oidc
             string redirectUri = BuildRedirectUri(context.Request, CallbackPath);
             
             var request = new HttpRequestMessage(HttpMethod.Post, wellKnown.TokenEndpoint);
+
+            string credentials = ToBase64($"{challenge.ClientId}:{challenge.ClientSecret}");
+            request.Headers.Add("Authorization", $"Basic {credentials}");
+            
             request.Content = new FormUrlEncodedContent([
                 new KeyValuePair<string, string>("grant_type", "authorization_code"),
                 new KeyValuePair<string, string>("code", code),
@@ -76,8 +81,17 @@ public static class Oidc
 
             var client = factory.CreateClient();
             var response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            return Results.Ok(response);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return Results.Content(await response.Content.ReadAsStringAsync(), statusCode: (int)response.StatusCode);
+            }
+
+            UserToken? token = await response.Content.ReadFromJsonAsync<UserToken>();
+            
+            string rootUri = BuildRedirectUri(context.Request, RootPath);
+            rootUri = QueryHelpers.AddQueryString(rootUri, [ new KeyValuePair<string, StringValues>("token", token?.AccessToken)]);
+            return Results.Redirect(rootUri);
         });
 
         return builder;
@@ -93,7 +107,7 @@ public static class Oidc
             { "scope", properties.Scopes },
             { "response_type", "code" },
             { "redirect_uri", redirectUri },
-            { "state", correlationId } // Needs to be more secure?
+            { "state", correlationId } // Needs to be more secure
         };
 
         var bytes = new byte[32];
@@ -107,7 +121,7 @@ public static class Oidc
         parameters[OAuthConstants.CodeChallengeMethodKey] = OAuthConstants.CodeChallengeMethodS256;
         
         // Store this for use during the code redemption.
-        challengeCache.Add(correlationId, properties.Authority, properties.ClientId, codeVerifier);
+        challengeCache.Add(correlationId, properties.Authority, properties.ClientId, properties.ClientSecret, codeVerifier);
         
         return QueryHelpers.AddQueryString(authorizationEndpoint.ToString(), parameters);
     }
@@ -115,61 +129,11 @@ public static class Oidc
     private static string BuildRedirectUri(HttpRequest request, string targetPath)
         => request.Scheme + Uri.SchemeDelimiter + request.Host + targetPath;
     
-    // protected virtual void GenerateCorrelationId(AuthenticationProperties properties)
-    // {
-    //     ArgumentNullException.ThrowIfNull(properties);
-    //
-    //     var bytes = new byte[32];
-    //     RandomNumberGenerator.Fill(bytes);
-    //     var correlationId = Base64UrlTextEncoder.Encode(bytes);
-    //
-    //     var cookieOptions = Options.CorrelationCookie.Build(Context, TimeProvider.GetUtcNow());
-    //
-    //     properties.Items[CorrelationProperty] = correlationId;
-    //
-    //     var cookieName = Options.CorrelationCookie.Name + correlationId;
-    //
-    //     Response.Cookies.Append(cookieName, CorrelationMarker, cookieOptions);
-    // }
-    //
-    // /// <summary>
-    // /// Validates that the current request correlates with the current remote authentication request.
-    // /// </summary>
-    // /// <param name="properties"></param>
-    // /// <returns></returns>
-    // protected virtual bool ValidateCorrelationId(AuthenticationProperties properties)
-    // {
-    //     ArgumentNullException.ThrowIfNull(properties);
-    //
-    //     if (!properties.Items.TryGetValue(CorrelationProperty, out var correlationId))
-    //     {
-    //         Logger.CorrelationPropertyNotFound(Options.CorrelationCookie.Name!);
-    //         return false;
-    //     }
-    //
-    //     properties.Items.Remove(CorrelationProperty);
-    //
-    //     var cookieName = Options.CorrelationCookie.Name + correlationId;
-    //
-    //     var correlationCookie = Request.Cookies[cookieName];
-    //     if (string.IsNullOrEmpty(correlationCookie))
-    //     {
-    //         Logger.CorrelationCookieNotFound(cookieName);
-    //         return false;
-    //     }
-    //
-    //     var cookieOptions = Options.CorrelationCookie.Build(Context, TimeProvider.GetUtcNow());
-    //
-    //     Response.Cookies.Delete(cookieName, cookieOptions);
-    //
-    //     if (!string.Equals(correlationCookie, CorrelationMarker, StringComparison.Ordinal))
-    //     {
-    //         Logger.UnexpectedCorrelationCookieValue(cookieName, correlationCookie);
-    //         return false;
-    //     }
-    //
-    //     return true;
-    // }
+    private static string ToBase64(string text) 
+    {
+        var plainTextBytes = Encoding.UTF8.GetBytes(text);
+        return Convert.ToBase64String(plainTextBytes);
+    }
 }
 
 public class WellKnownDocument
@@ -231,9 +195,9 @@ public class ChallengeCache
         _cache = cache;
     }
 
-    public void Add(string correlationId, string authority, string clientId, string codeVerifier)
+    public void Add(string correlationId, string authority, string clientId, string clientSecret, string codeVerifier)
     {
-        if (_cache.TryGetValue(correlationId, out var _))
+        if (_cache.TryGetValue(correlationId, out _))
             throw new Exception("Correlation already used");
         
         var cacheEntryOptions = new MemoryCacheEntryOptions
@@ -241,7 +205,7 @@ public class ChallengeCache
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1), // Review
             Size = 1
         };
-        _cache.Set(correlationId, new ChallengeEntry(authority, clientId, codeVerifier),  cacheEntryOptions);
+        _cache.Set(correlationId, new ChallengeEntry(authority, clientId, clientSecret, codeVerifier),  cacheEntryOptions);
     }
     
     public ChallengeEntry Get(string correlationId)
@@ -253,7 +217,10 @@ public class ChallengeCache
     }
 }
 
-public record ChallengeEntry(string Authority, string ClientId, string CodeVerifier);
+public record ChallengeEntry(string Authority, string ClientId, string ClientSecret, string CodeVerifier);
 
-
-
+public class UserToken
+{
+    [JsonPropertyName("access_token")]
+    public string AccessToken { get; set; }
+}
