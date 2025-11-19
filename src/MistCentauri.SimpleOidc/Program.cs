@@ -1,3 +1,4 @@
+using MistCentauri.Oidc;
 using MistCentauri.SimpleOidc;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,10 +13,9 @@ app.UseHsts();
 app.UseHttpsRedirection();
 app.UseStatusCodePages();
 app.UseMiddleware<ExceptionMiddleware>(); // For debugging
-app.UseRouting();
 app.UseAntiforgery();
 
-app.MapOidc();
+app.MapOidcEndpoints();
 app.MapStaticAssets();
 app.MapRazorPages();
 

@@ -28,4 +28,3 @@ public class ExceptionMiddleware
         return context.Response.WriteAsync(exception.ToString());
     }
 }
-
