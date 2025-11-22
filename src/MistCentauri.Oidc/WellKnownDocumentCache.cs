@@ -40,8 +40,11 @@ internal class WellKnownDocumentCache
 internal class WellKnownDocument
 {
     [JsonPropertyName("authorization_endpoint")]
-    public Uri AuthorizationEnpoint { get; set; }
+    public Uri AuthorizationEndpoint { get; set; }
     
     [JsonPropertyName("token_endpoint")]
     public Uri TokenEndpoint { get; set; }
+    
+    [JsonPropertyName("end_session_endpoint")]
+    public Uri SignoutEndpoint { get; set; }
 }

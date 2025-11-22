@@ -12,17 +12,19 @@ using Microsoft.Extensions.Primitives;
 
 namespace MistCentauri.Oidc;
 
-public class StateProperties : Dictionary<string, string>;
-
 public static class EndpointRouteBuilderExtensions
 {
     private const string CodeVerifierProperty = "code_verifier";
-    private const string CorrelationProperty = "correlation_id";
     private const string CodeChallengeKey = "code_challenge";
     private const string CodeChallengeMethodKey = "code_challenge_method";
 
+    private const string CorrelationCookiePrefix = "MistCentauri.Oidc.CorrelationId";
+    private const string CorrelationProperty = "correlation_id";
+    private const string CorrelationSentinel = "0";
+
     private const string RootPath = "/";
     private const string SignInPath = "/signin";
+    private const string SignOutPath = "/signout";
     private const string SignInCallbackPath = "/signin-callback";
 
     public static IEndpointRouteBuilder MapOidcEndpoints(this IEndpointRouteBuilder builder)
@@ -60,11 +62,19 @@ public static class EndpointRouteBuilderExtensions
             parameters[CodeChallengeKey] = codeChallenge;
             parameters[CodeChallengeMethodKey] = "S256";
 
-            // TODO: Create correlation id
+            string correlationId = Guid.NewGuid().ToString();
+
+            var cookieOptions = new CookieOptions()
+            {
+                HttpOnly = true,
+                Secure = true,
+                MaxAge = TimeSpan.FromMinutes(2)
+            };
+            context.Response.Cookies.Append($"{CorrelationCookiePrefix}.{correlationId}", CorrelationSentinel, cookieOptions);
 
             StateProperties state = new StateProperties()
             {
-                { CorrelationProperty, Guid.NewGuid().ToString() },
+                { CorrelationProperty, correlationId },
                 { CodeVerifierProperty, codeVerifier}
             };
 
@@ -73,7 +83,7 @@ public static class EndpointRouteBuilderExtensions
             var challenge = new ChallengeData(signInRequest.Authority, signInRequest.ClientId, signInRequest.ClientSecret, codeVerifier);
             challengeCache.Store(state[CorrelationProperty], challenge);
 
-            var challengeUri = BuildChallengeUrl(wellKnown.AuthorizationEnpoint, parameters);
+            var challengeUri = BuildChallengeUrl(wellKnown.AuthorizationEndpoint, parameters);
             return Results.Redirect(challengeUri);
         });
 
@@ -86,9 +96,32 @@ public static class EndpointRouteBuilderExtensions
                 return Results.BadRequest("Invalid state");
             }
 
-            // TODO: Validate correlation id
+            if (!stateProperties.TryGetValue(CorrelationProperty, out string? correlationId))
+            {
+                return Results.BadRequest("Invalid state");
+            }
 
-            ChallengeData? challenge = challengeCache.Get(stateProperties[CorrelationProperty]);
+            string cookieName = $"{CorrelationCookiePrefix}.{correlationId}";
+            
+            if (!context.Request.Cookies.TryGetValue(cookieName, out string? correlationSentinel) || string.IsNullOrEmpty(correlationSentinel))
+            {
+                return Results.BadRequest("Invalid state");
+            }
+
+            var cookieOptions = new CookieOptions()
+            {
+                HttpOnly = true,
+                Secure = true,
+                MaxAge = TimeSpan.FromMinutes(2)
+            };
+            context.Response.Cookies.Delete(cookieName, cookieOptions);
+
+            if (!string.Equals(correlationSentinel, CorrelationSentinel, StringComparison.InvariantCulture))
+            {
+                return Results.BadRequest("Invalid correlation id");
+            }
+
+            ChallengeData? challenge = challengeCache.Get(correlationId);
             if (challenge is null)
             {
                 return Results.BadRequest("Invalid state");
@@ -128,6 +161,23 @@ public static class EndpointRouteBuilderExtensions
             return Results.Redirect(rootUri);
         });
 
+        // builder.MapGet(SignOutPath, async (HttpContext context, IHttpClientFactory factory, WellKnownDocumentCache documentCache) =>
+        // {
+        //     // var cookieOptions = new CookieOptions()
+        //     // {
+        //     //     HttpOnly = true,
+        //     //     Secure = true,
+        //     //     MaxAge = TimeSpan.FromMinutes(2)
+        //     // };
+        //     // context.Response.Cookies.Delete(cookieName, cookieOptions);
+        //
+        //     WellKnownDocument? wellKnown = await documentCache.GetAsync(signInRequest.Authority);
+        //     if (wellKnown == null)
+        //     {
+        //         return Results.BadRequest(".well-known not found");
+        //     }
+        // });
+
         return builder;
     }
 
@@ -137,6 +187,8 @@ public static class EndpointRouteBuilderExtensions
     private static string BuildRedirectUri(HttpRequest request, string targetPath)
         => request.Scheme + Uri.SchemeDelimiter + request.Host + targetPath;
 }
+
+public class StateProperties : Dictionary<string, string>;
 
 public class UserToken
 {
