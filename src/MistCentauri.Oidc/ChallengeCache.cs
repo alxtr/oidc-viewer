@@ -11,24 +11,24 @@ sealed internal class ChallengeCache
         _cache = cache;
     }
 
-    public void Store(string correlationId, ChallengeData data)
+    public void Store(string correlationId, ChallengeState state, TimeSpan validFor)
     {
         if (_cache.TryGetValue($"ch_{correlationId}", out _))
         {
-            throw new Exception();
+            throw new Exception("Correlation id already exists");
         }
+
         var cacheEntryOptions = new MemoryCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2),
+            AbsoluteExpirationRelativeToNow = validFor,
             Size = 1
         };
-        _cache.Set($"ch_{correlationId}", data, cacheEntryOptions);
+        _cache.Set($"ch_{correlationId}", state, cacheEntryOptions);
     }
 
-    public ChallengeData? Get(string correlationId)
+    public ChallengeState? Get(string correlationId)
     {
-        _cache.TryGetValue($"ch_{correlationId}", out ChallengeData? value);
-        return value;
+        return _cache.Get<ChallengeState>($"ch_{correlationId}");
     }
 
     public void Remove(string correlationId)
@@ -37,4 +37,4 @@ sealed internal class ChallengeCache
     }
 }
 
-internal record ChallengeData(SignInRequest Request, string CodeVerifier);
+sealed internal record ChallengeState(SignInRequest Request, string CodeVerifier);

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace MistCentauri.Oidc;
 
-internal static class UriBase64
+public static class UriBase64
 {
     public static string Encode(string data) 
     {

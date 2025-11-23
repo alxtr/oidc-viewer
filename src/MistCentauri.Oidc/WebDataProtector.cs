@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.DataProtection;
 
 namespace MistCentauri.Oidc;
 
-internal interface IWebDataProtector<T>
+public interface IWebDataProtector<T>
 {
     string Protect(T data);
 

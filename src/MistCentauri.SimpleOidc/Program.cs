@@ -6,7 +6,13 @@ using MistCentauri.SimpleOidc;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
-    .AddOidc()
+    .AddOidc(o =>
+    {
+        o.ChallengeTimeout = TimeSpan.FromMinutes(2);
+        o.SignInRedirect = "/";
+        o.SignOutRedirect = "/";
+        o.ErrorRedirect = "/Login";
+    })
     .AddAuthorization()
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(o => o.LoginPath = new PathString("/Login"));

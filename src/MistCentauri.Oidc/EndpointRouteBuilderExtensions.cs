@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Options;
 
 namespace MistCentauri.Oidc;
 
@@ -22,42 +23,37 @@ public static class EndpointRouteBuilderExtensions
     private const string CorrelationProperty = "correlation_id";
     private const string CorrelationSentinel = "0";
 
-    private const string RootPath = "/";
     private const string SignInPath = "/signin";
     private const string SignInCallbackPath = "/signin-callback";
     private const string SignOutPath = "/signout";
 
-    // TODO: Options for redirect uri
     public static IEndpointRouteBuilder MapOidcEndpoints(this IEndpointRouteBuilder builder)
     {
         builder.MapPost(SignInPath, SignIn);
         builder.MapGet(SignInCallbackPath, SignInCallback);
-        builder.MapPost(SignOutPath, async (HttpContext context) =>
-        {
-            await context.SignOutAsync();
-            return Results.Redirect(RootPath);
-        });
-
+        builder.MapPost(SignOutPath, SignOut);
         return builder;
     }
 
     private async static Task<IResult> SignIn(
         HttpContext context, 
+        IOptions<OidcOptions> options,
         IAntiforgery antiforgery, 
         WellKnownDocumentCache documentCache, 
-        ChallengeCache challengeCache, 
+        ChallengeCache challengeCache,
+        IRandomGenerator random,
         IWebDataProtector<StateProperties> protector, 
         [FromForm] SignInRequest signInRequest)
     {
         if (!await antiforgery.IsRequestValidAsync(context))
         {
-            return Results.Redirect(RootPath);
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "invalid_csrf_token");
         }
 
         WellKnownDocument? wellKnown = await documentCache.GetAsync(signInRequest.Authority);
         if (wellKnown == null)
         {
-            return Results.BadRequest(".well-known not found");
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "discovery_document_not_found");
         }
 
         string callbackUri = BuildRedirectUri(context.Request, SignInCallbackPath);
@@ -70,20 +66,22 @@ public static class EndpointRouteBuilderExtensions
             { "redirect_uri", callbackUri }
         };
 
-        var codeVerifier = GenerateBase64UrlRandom();
+        var codeVerifier = random.Generate();
         var challengeBytes = SHA256.HashData(Encoding.UTF8.GetBytes(codeVerifier));
         var codeChallenge = WebEncoders.Base64UrlEncode(challengeBytes);
 
         parameters[CodeChallengeKey] = codeChallenge;
         parameters[CodeChallengeMethodKey] = "S256";
 
-        string correlationId = GenerateBase64UrlRandom();
+        string correlationId = random.Generate();
 
         var cookieOptions = new CookieOptions()
         {
             HttpOnly = true,
             Secure = true,
-            MaxAge = TimeSpan.FromMinutes(2)
+            SameSite = SameSiteMode.None,
+            IsEssential = true,
+            MaxAge = options.Value.ChallengeTimeout
         };
         context.Response.Cookies.Append($"{CorrelationCookiePrefix}.{correlationId}", CorrelationSentinel, cookieOptions);
 
@@ -95,15 +93,16 @@ public static class EndpointRouteBuilderExtensions
 
         parameters["state"] = protector.Protect(state);
 
-        var challenge = new ChallengeData(signInRequest, codeVerifier);
-        challengeCache.Store(state[CorrelationProperty], challenge);
+        var challenge = new ChallengeState(signInRequest, codeVerifier);
+        challengeCache.Store(state[CorrelationProperty], challenge, options.Value.ChallengeTimeout);
 
-        var challengeUri = BuildChallengeUrl(wellKnown.AuthorizationEndpoint, parameters);
+        var challengeUri = QueryHelpers.AddQueryString(wellKnown.AuthorizationEndpoint.ToString(), parameters);
         return Results.Redirect(challengeUri);
     }
 
     private async static Task<IResult> SignInCallback(
-        HttpContext context, 
+        HttpContext context,
+        IOptions<OidcOptions> options,
         IHttpClientFactory factory, 
         WellKnownDocumentCache documentCache, 
         ChallengeCache challengeCache,
@@ -115,42 +114,48 @@ public static class EndpointRouteBuilderExtensions
 
         if (stateProperties is null)
         {
-            return Results.BadRequest("Invalid state");
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "state_invalid_or_not_found");
         }
 
         if (!stateProperties.TryGetValue(CorrelationProperty, out string? correlationId))
         {
-            return Results.BadRequest("Invalid state");
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "state_correlation_id_not_found");
         }
 
         string cookieName = $"{CorrelationCookiePrefix}.{correlationId}";
         
         if (!context.Request.Cookies.TryGetValue(cookieName, out string? correlationSentinel) || string.IsNullOrEmpty(correlationSentinel))
         {
-            return Results.BadRequest("Invalid state");
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "correlation_cookie_invalid_or_not_found");
         }
 
         context.Response.Cookies.Delete(cookieName);
 
         if (!string.Equals(correlationSentinel, CorrelationSentinel, StringComparison.InvariantCulture))
         {
-            return Results.BadRequest("Invalid correlation id");
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "invalid_correlation_id");
         }
 
-        ChallengeData? challenge = challengeCache.Get(correlationId);
+        string? error = context.Request.Query["error"];
+        if (!string.IsNullOrWhiteSpace(error))
+        {
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, error);
+        }
+    
+        ChallengeState? challenge = challengeCache.Get(correlationId);
         challengeCache.Remove(correlationId);
 
         if (challenge is null)
         {
-            return Results.BadRequest("Invalid state");
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "challenge_state_not_found");
         }
 
         WellKnownDocument? wellKnown = await documentCache.GetAsync(challenge.Request.Authority);
         if (wellKnown == null)
         {
-            return Results.BadRequest(".well-known not found");
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "discovery_document_not_found");
         }
-        
+
         string redirectUri = BuildRedirectUri(context.Request, SignInCallbackPath);
         
         var request = new HttpRequestMessage(HttpMethod.Post, wellKnown.TokenEndpoint);
@@ -169,16 +174,19 @@ public static class EndpointRouteBuilderExtensions
 
         if (!response.IsSuccessStatusCode)
         {
-            // TODO: Read 400s correctly /w error
-            return Results.Content(await response.Content.ReadAsStringAsync(), statusCode: (int)response.StatusCode);
+            TokenErrorResponse? errorResponse = await response.Content.ReadFromJsonAsync<TokenErrorResponse>();
+            return ErrorRedirect(
+                context.Request, 
+                options.Value.ErrorRedirect, 
+                errorResponse?.Error ?? "unexpected_error", 
+                errorResponse?.ErrorDescription);
         }
 
         TokenResponse? tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
 
         if (tokenResponse is null)
         {
-            // TODO: Include ?error=
-            return Results.Redirect(RootPath);
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "invalid_token_response");
         }
 
         var properties = new AuthenticationProperties();
@@ -209,30 +217,83 @@ public static class EndpointRouteBuilderExtensions
                 Value = tokenResponse.ExpiresIn
             }
         ]);
+        
+        // Store required metadata
+        properties.Items.Add("authority", UriBase64.Encode(challenge.Request.Authority));
 
-        // TODO: Add metadata to properties
         // TODO: Map basic claims
-
         List<Claim> claims = [
-            new Claim("your-claim", "your-value")
+            new Claim(ClaimTypes.Name, "your-value")
         ];
 
         // TODO: Change auth type name
         await context.SignInAsync(new ClaimsPrincipal(new ClaimsIdentity(claims, "oidc")), properties);
-        return Results.Redirect(RootPath);
+        return Results.Redirect(options.Value.SignInRedirect);
     }
 
-    private static string BuildChallengeUrl(Uri authorizationEndpoint, Dictionary<string, string?> parameters)
-        => QueryHelpers.AddQueryString(authorizationEndpoint.ToString(), parameters);
-    
+    private async static Task<IResult> SignOut(
+        HttpContext context,
+        IOptions<OidcOptions> options,
+        IHttpClientFactory factory, 
+        WellKnownDocumentCache documentCache)
+    {
+        AuthenticateResult ticket = await context.AuthenticateAsync();
+        if (!ticket.Succeeded)
+        {
+            return Results.Redirect(options.Value.SignOutRedirect);
+        }
+
+        await context.SignOutAsync();
+
+        string? authority = ticket.Properties.Items["authority"];
+        if (string.IsNullOrEmpty(authority))
+        {
+            return Results.Redirect(options.Value.SignOutRedirect);
+        }
+
+        string decodeAuthority = UriBase64.Decode(authority);
+
+        WellKnownDocument? wellKnown = await documentCache.GetAsync(decodeAuthority);
+        if (wellKnown == null)
+        {
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "discovery_document_not_found");
+        }
+
+        string callbackUri = BuildRedirectUri(context.Request, options.Value.SignOutRedirect);
+        
+        var parameters = new Dictionary<string, string?>
+        {
+            { "post_logout_redirect_uri", callbackUri }
+        };
+
+        string redirectUri = QueryHelpers.AddQueryString(wellKnown.SignoutEndpoint.ToString(), parameters);
+        return Results.Redirect(redirectUri);
+    }
+
     private static string BuildRedirectUri(HttpRequest request, string targetPath)
         => request.Scheme + Uri.SchemeDelimiter + request.Host + targetPath;
 
-    private static string GenerateBase64UrlRandom()
+    private static string BuildErrorUri(HttpRequest request, string path, string error, string? errorDescription = null)
     {
-        var bytes = new byte[32];
-        RandomNumberGenerator.Fill(bytes);
-        return WebEncoders.Base64UrlEncode(bytes);
+        string baseRedirectUri = BuildRedirectUri(request, path);
+
+        var parameters = new Dictionary<string, string?>
+        {
+            { "error", UriBase64.Encode(error) }
+        };
+
+        if (errorDescription is not null)
+        {
+            parameters["error_description"] = UriBase64.Encode(errorDescription);
+        }
+
+        return QueryHelpers.AddQueryString(baseRedirectUri, parameters);
+    }
+
+    private static IResult ErrorRedirect(HttpRequest request, string path, string error, string? errorDescription = null)
+    {
+        string errorUri = BuildErrorUri(request, path, error, errorDescription);
+        return Results.Redirect(errorUri);
     }
 }
 
