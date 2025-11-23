@@ -5,7 +5,7 @@
 @model IndexModel
 @{
     ViewData["Title"] = "Home";
-    string accessToken = string.Empty;
+    string? accessToken = await HttpContext.GetTokenAsync("access_token");
 }
 
 @if (!string.IsNullOrWhiteSpace(accessToken))
@@ -15,13 +15,16 @@
     {
         JwtSecurityToken jwt = new JwtSecurityToken(jwtEncodedString: accessToken);
         JsonDocument parsedPayload = JsonDocument.Parse(jwt.Payload.SerializeToJson());
-        decodedPayload = JsonSerializer.Serialize(parsedPayload.RootElement, new JsonSerializerOptions { WriteIndented = true });
+        decodedPayload = JsonSerializer.Serialize(parsedPayload.RootElement, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
     }
     catch
     {
         // ignored
     }
-    
+
     <nav class="navbar">
         <div class="container-fluid justify-content-end">
             <form action="/signout" method="post" asp-antiforgery="true">
@@ -44,19 +47,48 @@
                                         <div class="input-group input-group-sm">
                                             <input type="text" class="form-control" readonly
                                                    value="@accessToken">
-                                            <button class="btn btn-outline-secondary" type="button"><i
-                                                    class="bi bi-clipboard"></i></button>
+                                            <button class="btn btn-outline-secondary" type="button">
+                                                <i class="bi bi-clipboard"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
-                                @* <tr> *@
-                                @*     <td><strong>expires_at:</strong></td> *@
-                                @*     <td> *@
-                                @*         <div class="small"> *@
-                                @*             @await HttpContext.GetTokenAsync("expires_at") *@
-                                @*         </div> *@
-                                @*     </td> *@
-                                @* </tr> *@
+                                <tr>
+                                    <td><strong>refresh_token:</strong></td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control" readonly
+                                                   value="@accessToken">
+                                            <button class="btn btn-outline-secondary" type="button">
+                                                <i class="bi bi-clipboard"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>token_type:</strong></td>
+                                    <td>
+                                        <div class="small">
+                                            @await HttpContext.GetTokenAsync("token_type")
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>scope:</strong></td>
+                                    <td>
+                                        <div class="small">
+                                            @await HttpContext.GetTokenAsync("scope")
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>expires_in:</strong></td>
+                                    <td>
+                                        <div class="small">
+                                            @await HttpContext.GetTokenAsync("expires_in")
+                                        </div>
+                                    </td>
+                                </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -78,6 +110,6 @@
 else
 {
     <div>
-        @await HttpContext.GetTokenAsync("access_token")
+        Please sign in
     </div>
 }

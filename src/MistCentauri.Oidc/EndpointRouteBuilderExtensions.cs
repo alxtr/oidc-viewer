@@ -1,16 +1,14 @@
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Security.Principal;
 using System.Text;
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace MistCentauri.Oidc;
 
@@ -24,34 +22,18 @@ public static class EndpointRouteBuilderExtensions
     private const string CorrelationProperty = "correlation_id";
     private const string CorrelationSentinel = "0";
 
-    private const string SessionCookie = "MistCentauri.Oidc.Session";
-
     private const string RootPath = "/";
     private const string SignInPath = "/signin";
     private const string SignInCallbackPath = "/signin-callback";
     private const string SignOutPath = "/signout";
-    
+
+    // TODO: Options for redirect uri
     public static IEndpointRouteBuilder MapOidcEndpoints(this IEndpointRouteBuilder builder)
     {
         builder.MapPost(SignInPath, SignIn);
         builder.MapGet(SignInCallbackPath, SignInCallback);
-
-        builder.MapGet(SignOutPath, async (HttpContext context, IHttpClientFactory factory, WellKnownDocumentCache documentCache) =>
+        builder.MapPost(SignOutPath, async (HttpContext context) =>
         {
-            // // var cookieOptions = new CookieOptions()
-            // // {
-            // //     HttpOnly = true,
-            // //     Secure = true,
-            // //     MaxAge = TimeSpan.FromMinutes(2)
-            // // };
-            // // context.Response.Cookies.Delete(cookieName, cookieOptions);
-            //
-            // WellKnownDocument? wellKnown = await documentCache.GetAsync(signInRequest.Authority);
-            // if (wellKnown == null)
-            // {
-            //     return Results.BadRequest(".well-known not found");
-            // }
-
             await context.SignOutAsync();
             return Results.Redirect(RootPath);
         });
@@ -124,10 +106,8 @@ public static class EndpointRouteBuilderExtensions
         HttpContext context, 
         IHttpClientFactory factory, 
         WellKnownDocumentCache documentCache, 
-        ChallengeCache challengeCache, 
-        ISessionStore sessionStore,
-        IWebDataProtector<StateProperties> stateProtector, 
-        IWebDataProtector<string> sessionProtector, 
+        ChallengeCache challengeCache,
+        IWebDataProtector<StateProperties> stateProtector,
         [FromQuery] string state, 
         [FromQuery] string code)
     {
@@ -201,39 +181,45 @@ public static class EndpointRouteBuilderExtensions
             return Results.Redirect(RootPath);
         }
 
-        TimeSpan expiresIn = TimeSpan.FromSeconds(tokenResponse.ExpiresIn);
-
-        string sessionId = sessionStore.Create(expiresIn);
-        sessionStore.Set(sessionId, "sign_in_request", challenge.Request);
-        sessionStore.Set(sessionId, "token_response", tokenResponse);
-
-        // TODO: Create CookieSessionMiddleware for authorization
-        //  - Looks for session id in store
-        //  - Allow if session exists
-        //  - Deny if session is expired or missing
-        
-        // TODO: Support error message on /error?= callback
-
-        string protectedSession = sessionProtector.Protect(sessionId);
-
-        var sessionCookieOptions = new CookieOptions()
-        {
-            HttpOnly = true,
-            Secure = true,
-            MaxAge = expiresIn,
-            SameSite = SameSiteMode.Strict
-        };
-        context.Response.Cookies.Append(SessionCookie, protectedSession, sessionCookieOptions);
-
         var properties = new AuthenticationProperties();
-        properties.StoreTokens([ new AuthenticationToken()
-        {
-            Name = "access_token",
-           Value = tokenResponse.AccessToken
-        } ]);
+        properties.StoreTokens([
+            new AuthenticationToken()
+            {
+                Name = "access_token",
+               Value = tokenResponse.AccessToken
+            },
+            new AuthenticationToken()
+            {
+                Name = "refresh_token",
+                Value = tokenResponse.RefreshToken
+            },
+            new AuthenticationToken()
+            {
+                Name = "token_type",
+                Value = tokenResponse.TokenType
+            },
+            new AuthenticationToken()
+            {
+                Name = "scope",
+                Value = tokenResponse.Scope
+            },
+            new AuthenticationToken()
+            {
+                Name = "expires_in",
+                Value = tokenResponse.ExpiresIn
+            }
+        ]);
 
-        await context.SignInAsync(new ClaimsPrincipal(new ClaimsIdentity([new Claim("your-claim", "your-value")], "oidc")), properties);
-        return Results.Redirect("/test");
+        // TODO: Add metadata to properties
+        // TODO: Map basic claims
+
+        List<Claim> claims = [
+            new Claim("your-claim", "your-value")
+        ];
+
+        // TODO: Change auth type name
+        await context.SignInAsync(new ClaimsPrincipal(new ClaimsIdentity(claims, "oidc")), properties);
+        return Results.Redirect(RootPath);
     }
 
     private static string BuildChallengeUrl(Uri authorizationEndpoint, Dictionary<string, string?> parameters)

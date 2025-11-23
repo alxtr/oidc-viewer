@@ -10,10 +10,7 @@ public static class ServiceCollectionExtensions
         services.AddMemoryCache(o => o.SizeLimit = 256);
         services.AddSingleton<WellKnownDocumentCache>();
         services.AddSingleton<ChallengeCache>();
-        services.AddSingleton<ISessionStore, InMemorySessionStore>();
-
         services.AddSingleton<IWebDataProtector<StateProperties>, WebDataProtector<StateProperties>>();
-        services.AddSingleton<IWebDataProtector<string>, WebDataProtector<string>>();
         return services;
     }
 }

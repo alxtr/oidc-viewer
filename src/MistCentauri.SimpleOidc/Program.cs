@@ -7,16 +7,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
     .AddOidc()
+    .AddAuthorization()
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(o =>
-    {
-        o.LoginPath = new PathString("/Login");
-    });
+    .AddCookie(o => o.LoginPath = new PathString("/Login"));
 
-builder.Services.AddRazorPages(o =>
-{
-    o.Conventions.AuthorizePage("/Index");
-});
+builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
@@ -26,8 +21,10 @@ app.UseStatusCodePages();
 app.UseMiddleware<ExceptionMiddleware>(); // For debugging
 app.UseAntiforgery();
 app.UseAuthentication();
+app.UseAuthorization();
 
-app.MapGet("/test", async context =>
+// For debugging
+app.MapGet("/ticket", async context =>
 {
     var ticket = await context.AuthenticateAsync();
     if (!ticket.Succeeded)
@@ -40,7 +37,7 @@ app.MapGet("/test", async context =>
     {
         await context.Response.WriteAsync($"{key}: {value}\r\n");
     }
-});
+}).RequireAuthorization();
 
 app.MapOidcEndpoints();
 app.MapStaticAssets();
