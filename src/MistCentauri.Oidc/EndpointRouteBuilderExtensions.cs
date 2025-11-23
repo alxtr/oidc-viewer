@@ -159,9 +159,8 @@ public static class EndpointRouteBuilderExtensions
         }
 
         string redirectUri = BuildRedirectUri(context.Request, SignInCallbackPath);
-        
-        var request = new HttpRequestMessage(HttpMethod.Post, wellKnown.TokenEndpoint);
 
+        var request = new HttpRequestMessage(HttpMethod.Post, wellKnown.TokenEndpoint);
         request.Content = new FormUrlEncodedContent([
             new KeyValuePair<string, string>("grant_type", "authorization_code"),
             new KeyValuePair<string, string>("code", code),
@@ -223,12 +222,27 @@ public static class EndpointRouteBuilderExtensions
         // Store required metadata
         properties.Items.Add("authority", UriBase64.Encode(challenge.Request.Authority));
 
-        // TODO: Map basic claims with /userinfo endpoint
-        List<Claim> claims = [
-            new Claim(ClaimTypes.Name, "placeholder")
-        ];
+        // Retrieve user info
+        var userInfoRequest = new HttpRequestMessage(HttpMethod.Get, wellKnown.UserInfoEndpoint);
+        userInfoRequest.Headers.Add("Authorization", $"Bearer {tokenResponse.AccessToken}");
+        var userInfoResponse = await client.SendAsync(userInfoRequest);
 
-        await context.SignInAsync(new ClaimsPrincipal(new ClaimsIdentity(claims, AuthenticationType)), properties);
+        if (!userInfoResponse.IsSuccessStatusCode)
+        {
+            string details = await userInfoResponse.Content.ReadAsStringAsync();
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "user_info_error", details);
+        }
+
+        var userClaims = await userInfoResponse.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        if (userClaims is null)
+        {
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "invalid_user_info");
+        }
+
+        var claims = userClaims.Select(x => new Claim(x.Key, x.Value));
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, AuthenticationType));
+
+        await context.SignInAsync(principal, properties);
         return Results.Redirect(options.Value.SignInRedirect);
     }
 

@@ -48,4 +48,7 @@ sealed internal class WellKnownDocument
     
     [JsonPropertyName("end_session_endpoint")]
     public Uri SignoutEndpoint { get; set; }
+    
+    [JsonPropertyName("userinfo_endpoint")]
+    public Uri UserInfoEndpoint { get; set; }
 }
