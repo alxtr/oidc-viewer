@@ -23,8 +23,7 @@ sealed internal class WellKnownDocumentCache
         {
             HttpClient client = _clientFactory.CreateClient();
             Uri wellKnowUri = new Uri(new Uri(authority), WellKnown);
-            
-            // TODO: Limit document size
+
             wellKnownDocument = await client.GetFromJsonAsync<WellKnownDocument>(wellKnowUri);
             
             var cacheEntryOptions = new MemoryCacheEntryOptions

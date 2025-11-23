@@ -4,7 +4,7 @@
 @using Microsoft.AspNetCore.Authentication
 @model IndexModel
 @{
-    ViewData["Title"] = "Home";
+    ViewData["Title"] = "OIDC Viewer";
 
     // TODO: Use ViewModel
     string? accessToken = await HttpContext.GetTokenAsync("access_token");
@@ -57,7 +57,7 @@
                                 <td>
                                     <div class="input-group input-group-sm">
                                         <input type="text" class="form-control" readonly
-                                               value="@accessToken">
+                                               value="@await HttpContext.GetTokenAsync("refresh_token")">
                                         <button class="btn btn-outline-secondary" type="button">
                                             <i class="bi bi-clipboard"></i>
                                         </button>

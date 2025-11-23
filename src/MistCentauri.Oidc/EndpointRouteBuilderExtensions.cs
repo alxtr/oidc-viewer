@@ -15,6 +15,8 @@ namespace MistCentauri.Oidc;
 
 public static class EndpointRouteBuilderExtensions
 {
+    private const string AuthenticationType = "mist-centauri-oidc";
+    
     private const string CodeVerifierProperty = "code_verifier";
     private const string CodeChallengeKey = "code_challenge";
     private const string CodeChallengeMethodKey = "code_challenge_method";
@@ -194,7 +196,7 @@ public static class EndpointRouteBuilderExtensions
             new AuthenticationToken()
             {
                 Name = "access_token",
-               Value = tokenResponse.AccessToken
+                Value = tokenResponse.AccessToken
             },
             new AuthenticationToken()
             {
@@ -217,17 +219,16 @@ public static class EndpointRouteBuilderExtensions
                 Value = tokenResponse.ExpiresIn
             }
         ]);
-        
+
         // Store required metadata
         properties.Items.Add("authority", UriBase64.Encode(challenge.Request.Authority));
 
-        // TODO: Map basic claims
+        // TODO: Map basic claims with /userinfo endpoint
         List<Claim> claims = [
-            new Claim(ClaimTypes.Name, "your-value")
+            new Claim(ClaimTypes.Name, "placeholder")
         ];
 
-        // TODO: Change auth type name
-        await context.SignInAsync(new ClaimsPrincipal(new ClaimsIdentity(claims, "oidc")), properties);
+        await context.SignInAsync(new ClaimsPrincipal(new ClaimsIdentity(claims, AuthenticationType)), properties);
         return Results.Redirect(options.Value.SignInRedirect);
     }
 

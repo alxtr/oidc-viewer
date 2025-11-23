@@ -11,7 +11,7 @@ builder.Services
         o.ChallengeTimeout = TimeSpan.FromMinutes(2);
         o.SignInRedirect = "/";
         o.SignOutRedirect = "/";
-        o.ErrorRedirect = "/Login";
+        o.ErrorRedirect = "/Login"; // TODO: Keep existing query params?
     })
     .AddAuthorization()
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
