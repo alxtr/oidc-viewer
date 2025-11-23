@@ -297,7 +297,7 @@ public static class EndpointRouteBuilderExtensions
             { "error", UriBase64.Encode(error) }
         };
 
-        if (errorDescription is not null)
+        if (!string.IsNullOrWhiteSpace(errorDescription))
         {
             parameters["error_description"] = UriBase64.Encode(errorDescription);
         }
