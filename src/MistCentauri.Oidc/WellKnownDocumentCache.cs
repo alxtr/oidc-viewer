@@ -4,7 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace MistCentauri.Oidc;
 
-internal class WellKnownDocumentCache
+sealed internal class WellKnownDocumentCache
 {
     private const string WellKnown = ".well-known/openid-configuration";
 
@@ -37,7 +37,7 @@ internal class WellKnownDocumentCache
     }
 }
 
-internal class WellKnownDocument
+sealed internal class WellKnownDocument
 {
     [JsonPropertyName("authorization_endpoint")]
     public Uri AuthorizationEndpoint { get; set; }

@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using MistCentauri.Oidc;
 using MistCentauri.SimpleOidc;
 
@@ -5,7 +7,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
     .AddOidc()
-    .AddRazorPages();
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(o =>
+    {
+        o.LoginPath = new PathString("/Login");
+    });
+
+builder.Services.AddRazorPages(o =>
+{
+    o.Conventions.AuthorizePage("/Index");
+});
 
 var app = builder.Build();
 
@@ -14,6 +25,22 @@ app.UseHttpsRedirection();
 app.UseStatusCodePages();
 app.UseMiddleware<ExceptionMiddleware>(); // For debugging
 app.UseAntiforgery();
+app.UseAuthentication();
+
+app.MapGet("/test", async context =>
+{
+    var ticket = await context.AuthenticateAsync();
+    if (!ticket.Succeeded)
+    {
+        await context.Response.WriteAsync($"Signed Out");
+        return;
+    }
+
+    foreach (var (key, value) in ticket.Properties.Items)
+    {
+        await context.Response.WriteAsync($"{key}: {value}\r\n");
+    }
+});
 
 app.MapOidcEndpoints();
 app.MapStaticAssets();

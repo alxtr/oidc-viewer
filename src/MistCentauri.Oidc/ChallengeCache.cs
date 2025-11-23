@@ -2,7 +2,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace MistCentauri.Oidc;
 
-internal class ChallengeCache
+sealed internal class ChallengeCache
 {
     private readonly IMemoryCache _cache;
 
@@ -13,23 +13,28 @@ internal class ChallengeCache
 
     public void Store(string correlationId, ChallengeData data)
     {
-        if (_cache.TryGetValue(correlationId, out _))
+        if (_cache.TryGetValue($"ch_{correlationId}", out _))
         {
             throw new Exception();
         }
         var cacheEntryOptions = new MemoryCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15),
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2),
             Size = 1
         };
-        _cache.Set(correlationId, data, cacheEntryOptions);
+        _cache.Set($"ch_{correlationId}", data, cacheEntryOptions);
     }
 
     public ChallengeData? Get(string correlationId)
     {
-        _cache.TryGetValue(correlationId, out ChallengeData? value);
+        _cache.TryGetValue($"ch_{correlationId}", out ChallengeData? value);
         return value;
+    }
+
+    public void Remove(string correlationId)
+    {
+        _cache.Remove(correlationId);
     }
 }
 
-internal record ChallengeData(string Authority, string ClientId, string ClientSecret, string CodeVerifier);
+internal record ChallengeData(SignInRequest Request, string CodeVerifier);

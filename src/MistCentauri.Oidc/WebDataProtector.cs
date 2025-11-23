@@ -10,7 +10,7 @@ internal interface IWebDataProtector<T>
     T? Unprotect(string protectedText);
 }
 
-internal class WebDataProtector<T> : IWebDataProtector<T>
+sealed internal class WebDataProtector<T> : IWebDataProtector<T>
 {
     private readonly IDataProtector _protector;
 
