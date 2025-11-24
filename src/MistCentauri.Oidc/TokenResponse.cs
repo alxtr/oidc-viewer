@@ -9,7 +9,7 @@ sealed internal class TokenResponse
 
     [JsonPropertyName("token_type")]
     public string TokenType { get; set; } = null!;
-    
+
     [JsonPropertyName("expires_in")]
     public string ExpiresIn { get; set; } = null!;
     

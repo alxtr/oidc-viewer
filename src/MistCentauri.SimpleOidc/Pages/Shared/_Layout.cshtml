@@ -16,8 +16,13 @@
 @RenderBody()
 
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/lib/clipboard/dist/js/clipboard.min.js"></script>
 
-@await RenderSectionAsync("Scripts", required: false)
+<script>
+    const clipboard = new ClipboardJS('.btn');
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+</script>
 
 </body>
 </html>

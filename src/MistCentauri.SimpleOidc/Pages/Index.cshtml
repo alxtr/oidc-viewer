@@ -6,9 +6,8 @@
 @{
     ViewData["Title"] = "OIDC Viewer";
 
-    // TODO: Use ViewModel
     string? accessToken = await HttpContext.GetTokenAsync("access_token");
-    string decodedPayload = string.Empty;
+    string decodedPayload = "Invalid JWT token";
     try
     {
         JwtSecurityToken jwt = new JwtSecurityToken(jwtEncodedString: accessToken);
@@ -24,48 +23,51 @@
     }
 }
 
-<nav class="navbar">
+<nav class="navbar p-3">
     <div class="container-fluid justify-content-end">
         <form action="/signout" method="post" asp-antiforgery="true">
-            <button class="btn btn-outline-secondary" type="submit">Sign out</button>
+            <button class="btn btn-outline-secondary btn-sm" type="submit">Sign out</button>
         </form>
     </div>
 </nav>
 
-<div class="container">
-    <div class="row gx-5">
+<div class="container-fluid">
+    <div class="row">
         <div class="col">
             <div class="p-3">
                 <div class="card shadow-sm">
+                    <div class="card-header font-monospace">
+                        /token
+                    </div>
                     <div class="card-body">
-                        <table class="table">
+                        <table class="table table-borderless">
                             <tbody>
                             <tr>
-                                <td><strong>access_token:</strong></td>
+                                <td class="col-2"><strong>access_token:</strong></td>
                                 <td>
                                     <div class="input-group input-group-sm">
                                         <input type="text" class="form-control" readonly
-                                               value="@accessToken">
-                                        <button class="btn btn-outline-secondary" type="button">
+                                               value="@accessToken" id="access-token-input">
+                                        <button class="btn btn-outline-secondary" type="button" data-clipboard-target="#access-token-input" data-bs-toggle="tooltip" data-bs-title="Copied" data-bs-trigger="click">
                                             <i class="bi bi-clipboard"></i>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>refresh_token:</strong></td>
+                                <td class="col-2"><strong>refresh_token:</strong></td>
                                 <td>
                                     <div class="input-group input-group-sm">
                                         <input type="text" class="form-control" readonly
-                                               value="@await HttpContext.GetTokenAsync("refresh_token")">
-                                        <button class="btn btn-outline-secondary" type="button">
+                                               value="@await HttpContext.GetTokenAsync("refresh_token")" id="refresh-token-input">
+                                        <button class="btn btn-outline-secondary" type="button" data-clipboard-target="#refresh-token-input" data-bs-toggle="tooltip" data-bs-title="Copied" data-bs-trigger="click">
                                             <i class="bi bi-clipboard"></i>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>token_type:</strong></td>
+                                <td class="col-2"><strong>token_type:</strong></td>
                                 <td>
                                     <div class="small">
                                         @await HttpContext.GetTokenAsync("token_type")
@@ -73,7 +75,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>scope:</strong></td>
+                                <td class="col-2"><strong>scope:</strong></td>
                                 <td>
                                     <div class="small">
                                         @await HttpContext.GetTokenAsync("scope")
@@ -81,7 +83,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>expires_in:</strong></td>
+                                <td class="col-2"><strong>expires_in:</strong></td>
                                 <td>
                                     <div class="small">
                                         @await HttpContext.GetTokenAsync("expires_in")
@@ -94,11 +96,42 @@
                 </div>
             </div>
         </div>
-        <div class="col">
+    </div>
+    <div class="row">
+        <div class="col col-xl-6">
             <div class="p-3">
                 <div class="card shadow-sm">
-                    <div class="card-body">
-                        <pre class="font-monospace small">@decodedPayload</pre>
+                    <div class="card-header font-monospace">
+                        /userinfo
+                    </div>
+                    <div class="card-body overflow-x-auto">
+                        <table class="table table-borderless">
+                            <tbody>
+                            @foreach (var claim in HttpContext.User.Claims)
+                            {
+                                <tr>
+                                    <td><strong>@claim.Type</strong></td>
+                                    <td>
+                                        <div class="small">
+                                            @claim.Value
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col col-xl-6">
+            <div class="p-3">
+                <div class="card shadow-sm">
+                    <div class="card-header font-monospace">
+                        access_token decoded
+                    </div>
+                    <div class="card-body overflow-x-auto">
+                        <pre>@decodedPayload</pre>
                     </div>
                 </div>
             </div>

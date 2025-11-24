@@ -34,6 +34,7 @@ public static class EndpointRouteBuilderExtensions
         builder.MapPost(SignInPath, SignIn);
         builder.MapGet(SignInCallbackPath, SignInCallback);
         builder.MapPost(SignOutPath, SignOut);
+        builder.MapGet(SignOutPath, SignOut);
         return builder;
     }
 
@@ -222,24 +223,41 @@ public static class EndpointRouteBuilderExtensions
         // Store required metadata
         properties.Items.Add("authority", UriBase64.Encode(challenge.Request.Authority));
 
-        // Retrieve user info
-        var userInfoRequest = new HttpRequestMessage(HttpMethod.Get, wellKnown.UserInfoEndpoint);
-        userInfoRequest.Headers.Add("Authorization", $"Bearer {tokenResponse.AccessToken}");
-        var userInfoResponse = await client.SendAsync(userInfoRequest);
+        List<Claim> claims = [];
 
-        if (!userInfoResponse.IsSuccessStatusCode)
+        // Attempt to retrieve user info
+        if (wellKnown.UserInfoEndpoint is not null)
         {
-            string details = await userInfoResponse.Content.ReadAsStringAsync();
-            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "user_info_error", details);
+            var userInfoRequest = new HttpRequestMessage(HttpMethod.Get, wellKnown.UserInfoEndpoint);
+            userInfoRequest.Headers.Add("Authorization", $"Bearer {tokenResponse.AccessToken}");
+            var userInfoResponse = await client.SendAsync(userInfoRequest);
+
+            // if (!userInfoResponse.IsSuccessStatusCode)
+            // {
+            //     string details = await userInfoResponse.Content.ReadAsStringAsync();
+            //     return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "user_info_error", details);
+            // }
+
+            if (userInfoResponse.IsSuccessStatusCode)
+            {
+                var userClaims = await userInfoResponse.Content.ReadFromJsonAsync<Dictionary<string, object?>>();
+                if (userClaims is null)
+                {
+                    return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "invalid_user_info");
+                }
+
+                claims.AddRange(userClaims.Select(x => new Claim(x.Key, x.Value?.ToString() ?? string.Empty)));
+            }
+            else
+            {
+                claims.Add(new Claim("name", "unknown"));
+            }
+        }
+        else
+        {
+            claims.Add(new Claim("name", "unknown"));
         }
 
-        var userClaims = await userInfoResponse.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-        if (userClaims is null)
-        {
-            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "invalid_user_info");
-        }
-
-        var claims = userClaims.Select(x => new Claim(x.Key, x.Value));
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, AuthenticationType));
 
         await context.SignInAsync(principal, properties);
@@ -272,6 +290,11 @@ public static class EndpointRouteBuilderExtensions
         if (wellKnown == null)
         {
             return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "discovery_document_not_found");
+        }
+
+        if (wellKnown.SignoutEndpoint is null)
+        {
+            return Results.Redirect(options.Value.SignOutRedirect);
         }
 
         string callbackUri = BuildRedirectUri(context.Request, options.Value.SignOutRedirect);
