@@ -9,20 +9,12 @@
 </head>
 <body>
 
-<script>
-    document.documentElement.setAttribute('data-bs-theme', (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))
-</script>
-
 @RenderBody()
 
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="~/lib/clipboard/dist/js/clipboard.min.js"></script>
-
-<script>
-    const clipboard = new ClipboardJS('.btn');
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-</script>
+<script src="~/js/toggle.js"></script>
+<script src="~/js/main.js"></script>
 
 </body>
 </html>

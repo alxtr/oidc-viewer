@@ -46,10 +46,18 @@
                                 <td class="col-2"><strong>access_token:</strong></td>
                                 <td>
                                     <div class="input-group input-group-sm">
-                                        <input type="text" class="form-control" readonly
-                                               value="@accessToken" id="access-token-input">
-                                        <button class="btn btn-outline-secondary" type="button" data-clipboard-target="#access-token-input" data-bs-toggle="tooltip" data-bs-title="Copied" data-bs-trigger="click">
-                                            <i class="bi bi-clipboard"></i>
+                                        <input type="text"
+                                               class="form-control"
+                                               value="@accessToken"
+                                               id="access-token-input"
+                                               readonly>
+                                        <button
+                                            class="btn btn-outline-secondary"
+                                            type="button"
+                                            data-clipboard-target="#access-token-input"
+                                            mc-toggle
+                                            data-icon-default="bi-clipboard"
+                                            data-icon-toggled="bi-check2">
                                         </button>
                                     </div>
                                 </td>
@@ -58,10 +66,18 @@
                                 <td class="col-2"><strong>refresh_token:</strong></td>
                                 <td>
                                     <div class="input-group input-group-sm">
-                                        <input type="text" class="form-control" readonly
-                                               value="@await HttpContext.GetTokenAsync("refresh_token")" id="refresh-token-input">
-                                        <button class="btn btn-outline-secondary" type="button" data-clipboard-target="#refresh-token-input" data-bs-toggle="tooltip" data-bs-title="Copied" data-bs-trigger="click">
-                                            <i class="bi bi-clipboard"></i>
+                                        <input type="text"
+                                               class="form-control"
+                                               value="@await HttpContext.GetTokenAsync("refresh_token")"
+                                               id="refresh-token-input"
+                                               readonly>
+                                        <button
+                                            class="btn btn-outline-secondary"
+                                            type="button"
+                                            data-clipboard-target="#refresh-token-input"
+                                            mc-toggle
+                                            data-icon-default="bi-clipboard"
+                                            data-icon-toggled="bi-check2">
                                         </button>
                                     </div>
                                 </td>
