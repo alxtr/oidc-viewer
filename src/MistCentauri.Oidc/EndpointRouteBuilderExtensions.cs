@@ -216,46 +216,20 @@ public static class EndpointRouteBuilderExtensions
             new AuthenticationToken()
             {
                 Name = "expires_in",
-                Value = tokenResponse.ExpiresIn
+                Value = tokenResponse.ExpiresIn.ToString()
             }
         ]);
 
-        // Store required metadata
-        properties.Items.Add("authority", UriBase64.Encode(challenge.Request.Authority));
+        // Store useful metadata
+        properties.Items.Add("authority", challenge.Request.Authority);
+        properties.Items.Add("client_id", challenge.Request.ClientId);
+        properties.Items.Add("client_secret", challenge.Request.ClientSecret);
+        properties.Items.Add("scope", challenge.Request.Scope);
 
-        List<Claim> claims = [];
-
-        // Attempt to retrieve user info
-        if (wellKnown.UserInfoEndpoint is not null)
+        var claims = await EnumerateClaimsAsync(client, wellKnown.UserInfoEndpoint, tokenResponse.AccessToken);
+        if (claims.Count == 0)
         {
-            var userInfoRequest = new HttpRequestMessage(HttpMethod.Get, wellKnown.UserInfoEndpoint);
-            userInfoRequest.Headers.Add("Authorization", $"Bearer {tokenResponse.AccessToken}");
-            var userInfoResponse = await client.SendAsync(userInfoRequest);
-
-            // if (!userInfoResponse.IsSuccessStatusCode)
-            // {
-            //     string details = await userInfoResponse.Content.ReadAsStringAsync();
-            //     return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "user_info_error", details);
-            // }
-
-            if (userInfoResponse.IsSuccessStatusCode)
-            {
-                var userClaims = await userInfoResponse.Content.ReadFromJsonAsync<Dictionary<string, object?>>();
-                if (userClaims is null)
-                {
-                    return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "invalid_user_info");
-                }
-
-                claims.AddRange(userClaims.Select(x => new Claim(x.Key, x.Value?.ToString() ?? string.Empty)));
-            }
-            else
-            {
-                claims.Add(new Claim("name", "unknown"));
-            }
-        }
-        else
-        {
-            claims.Add(new Claim("name", "unknown"));
+            return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "invalid_user_info");
         }
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, AuthenticationType));
@@ -284,9 +258,7 @@ public static class EndpointRouteBuilderExtensions
             return Results.Redirect(options.Value.SignOutRedirect);
         }
 
-        string decodeAuthority = UriBase64.Decode(authority);
-
-        WellKnownDocument? wellKnown = await documentCache.GetAsync(decodeAuthority);
+        WellKnownDocument? wellKnown = await documentCache.GetAsync(authority);
         if (wellKnown == null)
         {
             return ErrorRedirect(context.Request, options.Value.ErrorRedirect, "discovery_document_not_found");
@@ -332,6 +304,27 @@ public static class EndpointRouteBuilderExtensions
     {
         string errorUri = BuildErrorUri(request, path, error, errorDescription);
         return Results.Redirect(errorUri);
+    }
+
+    private async static Task<IReadOnlyList<Claim>> EnumerateClaimsAsync(HttpClient client, Uri? userInfoEndpoint, string accessToken)
+    {
+        if (userInfoEndpoint is not null)
+        {
+            var userInfoRequest = new HttpRequestMessage(HttpMethod.Get, userInfoEndpoint);
+            userInfoRequest.Headers.Add("Authorization", $"Bearer {accessToken}");
+            var userInfoResponse = await client.SendAsync(userInfoRequest);
+
+            if (userInfoResponse.IsSuccessStatusCode)
+            {
+                var userClaims = await userInfoResponse.Content.ReadFromJsonAsync<Dictionary<string, object?>>();
+                return userClaims is not null
+                    ? userClaims.Select(x => new Claim(x.Key, x.Value?.ToString() ?? string.Empty)).ToList()
+                    : [];
+            }
+        }
+
+        // Add default placeholder claim to make aspnet happy.
+        return [new Claim("error", "unable_to_retrieve_user_info")];
     }
 }
 
