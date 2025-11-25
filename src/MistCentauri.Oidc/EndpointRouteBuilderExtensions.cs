@@ -28,17 +28,73 @@ public static class EndpointRouteBuilderExtensions
     private const string SignInPath = "/signin";
     private const string SignInCallbackPath = "/signin-callback";
     private const string SignOutPath = "/signout";
+    private const string RefreshPath = "/refresh";
 
     public static IEndpointRouteBuilder MapOidcEndpoints(this IEndpointRouteBuilder builder)
     {
         builder.MapPost(SignInPath, SignIn);
         builder.MapGet(SignInCallbackPath, SignInCallback);
+        builder.MapGet(RefreshPath, Refresh);
         builder.MapPost(SignOutPath, SignOut);
         builder.MapGet(SignOutPath, SignOut);
         return builder;
     }
 
     private async static Task<IResult> SignIn(
+        HttpContext context,
+        IOptions<OidcOptions> options,
+        IAntiforgery antiforgery,
+        WellKnownDocumentCache documentCache,
+        ChallengeCache challengeCache,
+        IRandomGenerator random,
+        IWebDataProtector<StateProperties> protector,
+        [FromForm] SignInRequest signInRequest)
+    {
+        return await HandleSignIn(
+            context, 
+            options, 
+            antiforgery, 
+            documentCache, 
+            challengeCache, 
+            random, 
+            protector, 
+            signInRequest);
+    }
+    
+    private async static Task<IResult> Refresh(
+        HttpContext context,
+        IOptions<OidcOptions> options,
+        IAntiforgery antiforgery,
+        WellKnownDocumentCache documentCache,
+        ChallengeCache challengeCache,
+        IRandomGenerator random,
+        IWebDataProtector<StateProperties> protector)
+    {
+        AuthenticateResult ticket = await context.AuthenticateAsync();
+        if (!ticket.Succeeded)
+        {
+            return Results.Redirect(SignOutPath);
+        }
+
+        // TODO: Use refresh_token when available
+
+        var signInRequest = new SignInRequest(
+            ticket.Properties.Items["authority"] ?? string.Empty,
+            ticket.Properties.Items["client_id"] ?? string.Empty,
+            ticket.Properties.Items["client_secret"] ?? string.Empty,
+            ticket.Properties.Items["scope"] ?? string.Empty);
+
+        return await HandleSignIn(context, 
+            options, 
+            antiforgery, 
+            documentCache, 
+            challengeCache, 
+            random, 
+            protector, 
+            signInRequest);
+    }
+
+    private async static Task<IResult> HandleSignIn(
         HttpContext context, 
         IOptions<OidcOptions> options,
         IAntiforgery antiforgery, 
@@ -46,7 +102,7 @@ public static class EndpointRouteBuilderExtensions
         ChallengeCache challengeCache,
         IRandomGenerator random,
         IWebDataProtector<StateProperties> protector, 
-        [FromForm] SignInRequest signInRequest)
+        SignInRequest signInRequest)
     {
         if (!await antiforgery.IsRequestValidAsync(context))
         {

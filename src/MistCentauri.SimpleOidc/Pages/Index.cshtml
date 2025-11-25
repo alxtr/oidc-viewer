@@ -7,8 +7,10 @@
 
 <nav class="navbar p-3">
     <div class="container-fluid justify-content-end">
+        <a href="/refresh" class="btn btn-outline-secondary" tabindex="-1" role="button" aria-disabled="true"><i class="bi bi-arrow-clockwise"></i></a>
+        <span class="px-1"></span>
         <form action="/signout" method="post" asp-antiforgery="true">
-            <button class="btn btn-outline-secondary btn-sm" type="submit">Sign out</button>
+            <button class="btn btn-outline-secondary" type="submit">Sign out</button>
         </form>
     </div>
 </nav>
