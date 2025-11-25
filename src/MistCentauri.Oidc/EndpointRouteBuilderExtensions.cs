@@ -273,6 +273,11 @@ public static class EndpointRouteBuilderExtensions
             {
                 Name = "expires_in",
                 Value = tokenResponse.ExpiresIn.ToString()
+            },
+            new AuthenticationToken()
+            {
+                Name = "expires_at",
+                Value = DateTime.Now.AddSeconds(tokenResponse.ExpiresIn).ToString("O")
             }
         ]);
 

@@ -27,6 +27,7 @@ public class IndexModel : PageModel
         string? tokenType = await HttpContext.GetTokenAsync("token_type");
         string? scope = await HttpContext.GetTokenAsync("scope");
         string? expiresIn = await HttpContext.GetTokenAsync("expires_in");
+        string? expiresAt = await HttpContext.GetTokenAsync("expires_at");
 
         OidcResponse.Request = new OidcRequestModel()
         {
@@ -41,7 +42,8 @@ public class IndexModel : PageModel
             RefreshToken = refreshToken,
             TokenType = tokenType,
             Scopes = scope?.Split(' ').ToList() ?? [],
-            ExpiresIn = expiresIn
+            ExpiresIn = expiresIn,
+            ExpiresAt = !string.IsNullOrWhiteSpace(expiresAt) ? DateTime.Parse(expiresAt).ToString("dd-MM-yyyy HH:mm:ss") : string.Empty
         };
 
         JwtSecurityToken? jwt = null;

@@ -33,6 +33,8 @@ public class OidcTokenResponseModel
     public List<string> Scopes { get; set; }
     
     public string? ExpiresIn { get; set; }
+    
+    public string? ExpiresAt { get; set; }
 }
 
 public record ClaimModel(string Type, string Value);
