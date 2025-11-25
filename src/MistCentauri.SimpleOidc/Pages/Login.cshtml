@@ -59,6 +59,7 @@
                                 <option value="" selected>None</option>
                                 @foreach (var preset in Model.Presets)
                                 {
+                                    // This is not expected to be secure.
                                     string value = $"{Encode(preset.Settings.Authority)}:{Encode(preset.Settings.ClientId)}:{Encode(preset.Settings.ClientSecret)}:{Encode(preset.Settings.Scopes)}";
                                     <option value="@value">@preset.Name</option>   
                                 }
