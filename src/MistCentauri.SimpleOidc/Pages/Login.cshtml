@@ -1,11 +1,16 @@
 @page
 @model LoginModel
-@using Microsoft.Extensions.Configuration
+@using System.Text
 @using MistCentauri.Oidc
-@inject IConfiguration Configuration
 
 @{
     ViewData["Title"] = "Login";
+    
+    string Encode(string data) 
+    {
+        var bytes = Encoding.UTF8.GetBytes(data);
+        return Convert.ToBase64String(bytes);
+    }
 }
 
 <div class="container p-3 mt-4">
@@ -44,25 +49,40 @@
                     OpenID Connect
                 </div>
                 <div class="card-body">
+                    
+                    <div class="row mb-3">
+                        <div class="col-auto">
+                            <label for="presets" class="col-form-label">Presets</label>
+                        </div>
+                        <div class="col">
+                            <select id="presets" class="form-select" aria-label="Default select example">
+                                <option value="" selected>None</option>
+                                @foreach (var preset in Model.Presets)
+                                {
+                                    string value = $"{Encode(preset.Settings.Authority)}:{Encode(preset.Settings.ClientId)}:{Encode(preset.Settings.ClientSecret)}:{Encode(preset.Settings.Scopes)}";
+                                    <option value="@value">@preset.Name</option>   
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <hr/>
+
                     <form action="/signin" method="post" asp-antiforgery="true">
                         <div class="form-floating mb-3">
-                            <input type="url" class="form-control" id="authority"
-                                   value="@Configuration["OidcSettings:Authority"]" name="Authority">
+                            <input type="url" class="form-control" id="authority" name="Authority">
                             <label for="authority">Authority</label>
                         </div>
                         <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="clientId"
-                                   value="@Configuration["OidcSettings:ClientId"]" name="ClientId">
+                            <input type="text" class="form-control" id="clientId" name="ClientId">
                             <label for="clientId">Client Id</label>
                         </div>
                         <div class="form-floating mb-3">
-                            <input type="password" class="form-control" id="clientSecret"
-                                   value="@Configuration["OidcSettings:ClientSecret"]" name="ClientSecret">
+                            <input type="password" class="form-control" id="clientSecret" name="ClientSecret">
                             <label for="clientSecret">Client Secret</label>
                         </div>
                         <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="scope"
-                                   value="@Configuration["OidcSettings:Scope"]" name="Scope">
+                            <input type="text" class="form-control" id="scope" name="Scope">
                             <label for="scope">Scope</label>
                         </div>
                         <button type="submit" class="btn btn-primary">Sign in</button>
@@ -72,3 +92,28 @@
         </div>
     </div>
 </div>
+
+<script>
+    const presetsOptions = document.getElementById('presets');
+    const authorityInput = document.getElementById('authority');
+    const clientIdInput = document.getElementById('clientId');
+    const clientSecretInput = document.getElementById('clientSecret');
+    const scopeInput = document.getElementById('scope');
+
+    presetsOptions.addEventListener('change', (e) => {
+        if (e.target && e.target.value)
+        {
+            const preset = e.target.value.split(":").map(x => atob(x));
+
+            authorityInput.value = preset[0];
+            clientIdInput.value = preset[1];
+            clientSecretInput.value = preset[2];
+            scopeInput.value = preset[3];
+        } else {
+            authorityInput.value = "";
+            clientIdInput.value = "";
+            clientSecretInput.value = "";
+            scopeInput.value = "";
+        }
+    });
+</script>
