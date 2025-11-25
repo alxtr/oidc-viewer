@@ -41,7 +41,10 @@
                             <tr>
                                 <td class="col-2"><strong>scope:</strong></td>
                                 <td>
-                                    @Model.OidcResponse.Request.Scope
+                                    @foreach (var scope in Model.OidcResponse.Request.Scopes)
+                                    {
+                                        <span class="badge text-bg-secondary">@scope</span>
+                                    }
                                 </td>
                             </tr>
                             </tbody>
@@ -108,7 +111,10 @@
                             <tr>
                                 <td class="col-2"><strong>scope:</strong></td>
                                 <td>
-                                    @Model.OidcResponse.Response.Scope
+                                    @foreach (var scope in Model.OidcResponse.Response.Scopes)
+                                    {
+                                        <span class="badge text-bg-secondary">@scope</span>
+                                    }
                                 </td>
                             </tr>
                             <tr>
@@ -154,7 +160,7 @@
                         access_token
                     </div>
                     <div class="card-body overflow-x-auto">
-                        <pre>@Model.OidcResponse.DecodedJwt</pre>
+                        <pre>@(Model.OidcResponse.DecodedJwt ?? "Invalid JWT token")</pre>
                     </div>
                 </div>
             </div>

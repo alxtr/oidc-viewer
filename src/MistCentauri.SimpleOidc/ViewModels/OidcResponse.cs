@@ -19,7 +19,7 @@ public class OidcRequestModel
     
     public string? ClientId { get; set; }
     
-    public string? Scope { get; set; }
+    public List<string> Scopes { get; set; }
 }
 
 public class OidcTokenResponseModel
@@ -30,7 +30,7 @@ public class OidcTokenResponseModel
     
     public string? TokenType { get; set; }
     
-    public string? Scope { get; set; }
+    public List<string> Scopes { get; set; }
     
     public string? ExpiresIn { get; set; }
 }

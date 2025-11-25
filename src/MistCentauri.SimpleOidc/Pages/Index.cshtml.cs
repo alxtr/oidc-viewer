@@ -32,19 +32,28 @@ public class IndexModel : PageModel
         {
             Authority = ticket.Properties.Items["authority"],
             ClientId = ticket.Properties.Items["client_id"],
-            Scope = ticket.Properties.Items["scope"],
+            Scopes = ticket.Properties.Items["scope"]?.Split(' ').ToList() ?? [],
         };
-        
+
         OidcResponse.Response = new OidcTokenResponseModel()
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             TokenType = tokenType,
-            Scope = scope,
+            Scopes = scope?.Split(' ').ToList() ?? [],
             ExpiresIn = expiresIn
         };
 
-        JwtSecurityToken jwt = new JwtSecurityToken(jwtEncodedString: accessToken);
+        JwtSecurityToken? jwt = null;
+        try
+        {
+            jwt = new JwtSecurityToken(jwtEncodedString: accessToken);
+        }
+        catch
+        {
+            // ignored
+        }
+
         OidcResponse.DecodedJwt = DecodeJwt(jwt);
 
         OidcResponse.Claims = HttpContext.User.Claims
@@ -56,8 +65,11 @@ public class IndexModel : PageModel
         return Page();
     }
 
-    private string? DecodeJwt(JwtSecurityToken jwt)
+    private string? DecodeJwt(JwtSecurityToken? jwt)
     {
+        if (jwt is null)
+            return null;
+
         try
         {
             JsonDocument parsedPayload = JsonDocument.Parse(jwt.Payload.SerializeToJson());
@@ -72,7 +84,7 @@ public class IndexModel : PageModel
         }
     }
 
-    private string FindEmail(ClaimsPrincipal principal, JwtSecurityToken accessToken)
+    private string FindEmail(ClaimsPrincipal principal, JwtSecurityToken? accessToken)
     {
         // Try claims first
         if (principal.FindFirst("email") is { Value: var value })
@@ -81,7 +93,7 @@ public class IndexModel : PageModel
         }
 
         // Fallback to access token
-        if (accessToken.Payload[JwtRegisteredClaimNames.Email] is string email)
+        if (accessToken?.Payload[JwtRegisteredClaimNames.Email] is string email)
         {
             return email;
         }
