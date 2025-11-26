@@ -17,6 +17,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ChallengeCache>();
         services.AddSingleton<IRandomGenerator, UriSafeBase64RandomGenerator>();
         services.AddSingleton<IWebDataProtector<StateProperties>, WebDataProtector<StateProperties>>();
+        services.AddSingleton<IWebDataProtector<string>, WebDataProtector<string>>();
         return services;
     }
 }

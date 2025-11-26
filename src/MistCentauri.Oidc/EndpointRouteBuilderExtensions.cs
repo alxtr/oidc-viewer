@@ -47,9 +47,14 @@ public static class EndpointRouteBuilderExtensions
         WellKnownDocumentCache documentCache,
         ChallengeCache challengeCache,
         IRandomGenerator random,
-        IWebDataProtector<StateProperties> protector,
+        IWebDataProtector<StateProperties> stateProtector,
+        IWebDataProtector<string> clientSecretProtector,
         [FromForm] SignInRequest signInRequest)
     {
+        // Client secret might be a server-side protected value. Try to unwrap it first and use raw value if it fails.
+        string clientSecret = clientSecretProtector.Unprotect(signInRequest.ClientSecret) ?? signInRequest.ClientSecret;
+        var request = signInRequest with { ClientSecret = clientSecret };
+
         return await HandleSignIn(
             context, 
             options, 
@@ -57,8 +62,8 @@ public static class EndpointRouteBuilderExtensions
             documentCache, 
             challengeCache, 
             random, 
-            protector, 
-            signInRequest);
+            stateProtector, 
+            request);
     }
     
     private async static Task<IResult> Refresh(
