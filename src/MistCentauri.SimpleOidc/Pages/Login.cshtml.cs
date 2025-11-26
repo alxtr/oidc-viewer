@@ -9,26 +9,34 @@ namespace MistCentauri.SimpleOidc.Pages;
 
 public class LoginModel : PageModel
 {
+    private readonly OidcPresets _presets;
+    private readonly IWebDataProtector<string> _clientSecretProtector;
+    
     public List<SelectListItem> Presets { get; set; }
 
     public LoginModel(IOptions<OidcPresets> presets, IWebDataProtector<string> clientSecretProtector)
     {
-        Presets = presets.Value.Presets
-            .Select(x => new SelectListItem(
-                x.Name, 
-                GetPresetValue(x, clientSecretProtector), 
-                x.Name.Equals(presets.Value.Default, StringComparison.InvariantCulture)))
-            .ToList();
+        _presets = presets.Value;
+        _clientSecretProtector = clientSecretProtector;
     }
 
     public IActionResult OnGet()
-        => Page();
+    {
+        Presets = _presets.Presets
+            .Select(x => new SelectListItem(
+                x.Name, 
+                GetPresetValue(x), 
+                x.Name.Equals(_presets.Default, StringComparison.InvariantCulture)))
+            .ToList();
 
-    private string GetPresetValue(OidcPreset preset, IWebDataProtector<string> clientSecretProtector)
+        return Page();
+    }
+
+    private string GetPresetValue(OidcPreset preset)
     {
         string authority = Base64Encode(preset.Settings.Authority);
         string clientId = Base64Encode(preset.Settings.ClientId);
-        string clientSecret = Base64Encode(clientSecretProtector.Protect(preset.Settings.ClientSecret));
+        string clientSecret = Base64Encode(_clientSecretProtector.Protect(preset.Settings.ClientSecret));
         string scopes = Base64Encode(preset.Settings.Scopes);
 
         return $"{authority}:{clientId}:{clientSecret}:{scopes}";

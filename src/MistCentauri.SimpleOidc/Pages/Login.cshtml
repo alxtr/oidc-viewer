@@ -76,28 +76,35 @@
 </div>
 
 <script>
-    const presetsOptions = document.getElementById('presets');
-    const authorityInput = document.getElementById('authority');
-    const clientIdInput = document.getElementById('clientId');
-    const clientSecretInput = document.getElementById('clientSecret');
-    const scopeInput = document.getElementById('scope');
+    document.addEventListener('DOMContentLoaded', () => {
+        const presetsOptions = document.getElementById('presets');
+        const authorityInput = document.getElementById('authority');
+        const clientIdInput = document.getElementById('clientId');
+        const clientSecretInput = document.getElementById('clientSecret');
+        const scopeInput = document.getElementById('scope');
 
-    function updateSelectedPreset(el) {
-        if (el && el.value) {
-            const preset = el.value.split(":").map(x => atob(x));
+        function updateSelectedPreset(el) {
+            if (el && el.value) {
+                const preset = el.value.split(":").map(x => atob(x));
 
-            authorityInput.value = preset[0];
-            clientIdInput.value = preset[1];
-            clientSecretInput.value = preset[2];
-            scopeInput.value = preset[3];
-        } else {
-            authorityInput.value = "";
-            clientIdInput.value = "";
-            clientSecretInput.value = "";
-            scopeInput.value = "";
+                authorityInput.value = preset[0];
+                clientIdInput.value = preset[1];
+                clientSecretInput.value = preset[2];
+                scopeInput.value = preset[3];
+            } else {
+                authorityInput.value = "";
+                clientIdInput.value = "";
+                clientSecretInput.value = "";
+                scopeInput.value = "";
+            }
         }
-    }
 
-    presetsOptions.addEventListener('change', (e) => updateSelectedPreset(e.target));
-    updateSelectedPreset(presetsOptions);
+        authorityInput.value = "";
+        clientIdInput.value = "";
+        clientSecretInput.value = "";
+        scopeInput.value = "";
+
+        presetsOptions.addEventListener('change', (e) => updateSelectedPreset(e.target));
+        updateSelectedPreset(presetsOptions);
+    });
 </script>
