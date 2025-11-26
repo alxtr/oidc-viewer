@@ -1,23 +1,41 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Options;
 using MistCentauri.SimpleOidc.ViewModels;
 
 namespace MistCentauri.SimpleOidc.Pages;
 
 public class LoginModel : PageModel
 {
-    private readonly IConfiguration _configuration;
-    
-    public List<OidcPreset> Presets { get; private set; }
+    public List<SelectListItem> Presets { get; set; }
 
-    public LoginModel(IConfiguration configuration)
+    public LoginModel(IOptions<OidcPresets> presets)
     {
-        _configuration = configuration;
+        Presets = presets.Value.Presets
+            .Select(x => new SelectListItem(
+                x.Name, 
+                GetPresetValue(x), 
+                x.Name.Equals(presets.Value.Default, StringComparison.InvariantCulture)))
+            .ToList();
     }
-    
+
     public IActionResult OnGet()
+        => Page();
+
+    private string GetPresetValue(OidcPreset preset)
     {
-        Presets = _configuration.GetSection("OidcPresets").Get<List<OidcPreset>>() ?? [];
-        return Page();
+        string authority = Base64Encode(preset.Settings.Authority);
+        string clientId = Base64Encode(preset.Settings.ClientId);
+        string clientSecret = Base64Encode(preset.Settings.ClientSecret); // TODO: Use IWebDataProtector
+        string scopes = Base64Encode(preset.Settings.Scopes);
+
+        return $"{authority}:{clientId}:{clientSecret}:{scopes}";
+    }
+
+    private static string Base64Encode(string data) 
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(data);
+        return Convert.ToBase64String(bytes);
     }
 }

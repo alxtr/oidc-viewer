@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using MistCentauri.Oidc;
 using MistCentauri.SimpleOidc;
+using MistCentauri.SimpleOidc.ViewModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,11 +11,13 @@ builder.Services
         o.ChallengeTimeout = TimeSpan.FromMinutes(2);
         o.SignInRedirect = "/";
         o.SignOutRedirect = "/";
-        o.ErrorRedirect = "/Login?ReturnUrl=%2F";
+        o.ErrorRedirect = "/Login?ReturnUrl=%2F"; // Good enough for now
     })
     .AddAuthorization()
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(o => o.LoginPath = new PathString("/Login"));
+
+builder.Services.Configure<OidcPresets>(builder.Configuration.GetSection(nameof(OidcPresets)));
 
 builder.Services.AddRazorPages();
 

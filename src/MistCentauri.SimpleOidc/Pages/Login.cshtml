@@ -1,37 +1,25 @@
 @page
 @model LoginModel
-@using System.Text
 @using MistCentauri.Oidc
-
 @{
     ViewData["Title"] = "Login";
-    
-    string Encode(string data) 
-    {
-        var bytes = Encoding.UTF8.GetBytes(data);
-        return Convert.ToBase64String(bytes);
-    }
 }
 
 <div class="container p-3 mt-4">
     @{
         string? error = HttpContext.Request.Query["error"];
-
         if (!string.IsNullOrWhiteSpace(error))
         {
             string decodedError = UriBase64.Decode(error);
-
             <div class="row">
                 <div class="col">
                     <div class="alert alert-danger" role="alert">
                         @decodedError
                         @{
                             string? errorDescription = HttpContext.Request.Query["error_description"];
-
                             if (!string.IsNullOrWhiteSpace(errorDescription))
                             {
                                 string decodedErrorDescription = UriBase64.Decode(errorDescription);
-
                                 <hr>
                                 @decodedErrorDescription
                             }
@@ -49,24 +37,17 @@
                     OpenID Connect
                 </div>
                 <div class="card-body">
-                    
                     <div class="row mb-3">
                         <div class="col-auto">
                             <label for="presets" class="col-form-label">Presets</label>
                         </div>
                         <div class="col">
-                            <select id="presets" class="form-select" aria-label="Default select example">
-                                <option value="" selected>None</option>
-                                @foreach (var preset in Model.Presets)
-                                {
-                                    // This is not expected to be secure.
-                                    string value = $"{Encode(preset.Settings.Authority)}:{Encode(preset.Settings.ClientId)}:{Encode(preset.Settings.ClientSecret)}:{Encode(preset.Settings.Scopes)}";
-                                    <option value="@value">@preset.Name</option>   
-                                }
+                            <select id="presets" class="form-select" asp-items="Model.Presets">
+                                <option value="">Custom</option>
                             </select>
                         </div>
                     </div>
-                    
+
                     <hr/>
 
                     <form action="/signin" method="post" asp-antiforgery="true">
@@ -101,10 +82,9 @@
     const clientSecretInput = document.getElementById('clientSecret');
     const scopeInput = document.getElementById('scope');
 
-    presetsOptions.addEventListener('change', (e) => {
-        if (e.target && e.target.value)
-        {
-            const preset = e.target.value.split(":").map(x => atob(x));
+    function updateSelectedPreset(el) {
+        if (el && el.value) {
+            const preset = el.value.split(":").map(x => atob(x));
 
             authorityInput.value = preset[0];
             clientIdInput.value = preset[1];
@@ -116,5 +96,8 @@
             clientSecretInput.value = "";
             scopeInput.value = "";
         }
-    });
+    }
+
+    presetsOptions.addEventListener('change', (e) => updateSelectedPreset(e.target));
+    updateSelectedPreset(presetsOptions);
 </script>

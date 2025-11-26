@@ -43,7 +43,7 @@ public class IndexModel : PageModel
             TokenType = tokenType,
             Scopes = scope?.Split(' ').ToList() ?? [],
             ExpiresIn = expiresIn,
-            ExpiresAt = !string.IsNullOrWhiteSpace(expiresAt) ? DateTime.Parse(expiresAt).ToString("dd-MM-yyyy HH:mm:ss") : string.Empty
+            ExpiresAt = !string.IsNullOrWhiteSpace(expiresAt) ? DateTime.Parse(expiresAt).ToString("yyyy-MM-dd HH:mm:ss") : string.Empty
         };
 
         JwtSecurityToken? jwt = null;
