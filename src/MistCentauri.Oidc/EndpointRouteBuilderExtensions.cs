@@ -152,7 +152,7 @@ public static class EndpointRouteBuilderExtensions
         StateProperties state = new StateProperties()
         {
             { CorrelationProperty, correlationId },
-            { CodeVerifierProperty, codeVerifier}
+            { CodeVerifierProperty, codeVerifier }
         };
 
         parameters["state"] = protector.Protect(state);

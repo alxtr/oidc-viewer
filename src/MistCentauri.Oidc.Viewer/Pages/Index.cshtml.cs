@@ -5,9 +5,9 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using MistCentauri.SimpleOidc.ViewModels;
+using MistCentauri.Oidc.Viewer.ViewModels;
 
-namespace MistCentauri.SimpleOidc.Pages;
+namespace MistCentauri.Oidc.Viewer.Pages;
 
 [Authorize]
 public class IndexModel : PageModel

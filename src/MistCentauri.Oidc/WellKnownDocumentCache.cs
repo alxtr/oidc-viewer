@@ -19,7 +19,7 @@ sealed internal class WellKnownDocumentCache
 
     public async Task<WellKnownDocument?> GetAsync(string authority)
     {
-        if (!_cache.TryGetValue($"aut_{UriBase64.Encode(authority)}", out WellKnownDocument? wellKnownDocument))
+        if (!_cache.TryGetValue($"wk_{UriBase64.Encode(authority)}", out WellKnownDocument? wellKnownDocument))
         {
             HttpClient client = _clientFactory.CreateClient();
             Uri wellKnowUri = new Uri(new Uri(authority), WellKnown);
@@ -31,7 +31,7 @@ sealed internal class WellKnownDocumentCache
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24),
                 Size = 1
             };
-            _cache.Set($"aut_{UriBase64.Encode(authority)}", wellKnownDocument, cacheEntryOptions);
+            _cache.Set($"wk_{UriBase64.Encode(authority)}", wellKnownDocument, cacheEntryOptions);
         }
 
         return wellKnownDocument;

@@ -1,10 +1,10 @@
-namespace MistCentauri.SimpleOidc.ViewModels;
+namespace MistCentauri.Oidc.Viewer.ViewModels;
 
 public class OidcPresets
 {
     public string? Default { get; set; }
 
-    public List<OidcPreset> Presets { get; set; }
+    public List<OidcPreset>? Presets { get; set; } = [];
 }
 
 public class OidcPreset

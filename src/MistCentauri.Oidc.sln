@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MistCentauri.SimpleOidc", "MistCentauri.SimpleOidc\MistCentauri.SimpleOidc.csproj", "{EC72FDC2-3190-485E-896F-1E06B227F330}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MistCentauri.Oidc.Viewer", "MistCentauri.Oidc.Viewer\MistCentauri.Oidc.Viewer.csproj", "{EC72FDC2-3190-485E-896F-1E06B227F330}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{56C75302-209B-4B83-9E0D-69A5CC9D8324}"
 	ProjectSection(SolutionItems) = preProject

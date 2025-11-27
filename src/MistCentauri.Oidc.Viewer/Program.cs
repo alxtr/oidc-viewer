@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using MistCentauri.Oidc;
-using MistCentauri.SimpleOidc.ViewModels;
+using MistCentauri.Oidc.Viewer.ViewModels;
 
 var builder = WebApplication.CreateBuilder(args);
 

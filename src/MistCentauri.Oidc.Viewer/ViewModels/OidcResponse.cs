@@ -1,4 +1,4 @@
-namespace MistCentauri.SimpleOidc.ViewModels;
+namespace MistCentauri.Oidc.Viewer.ViewModels;
 
 public class OidcResponseModel
 {

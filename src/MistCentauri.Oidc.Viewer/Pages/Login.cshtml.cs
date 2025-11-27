@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Options;
 using MistCentauri.Oidc;
-using MistCentauri.SimpleOidc.ViewModels;
+using MistCentauri.Oidc.Viewer.ViewModels;
 
-namespace MistCentauri.SimpleOidc.Pages;
+namespace MistCentauri.Oidc.Viewer.Pages;
 
 public class LoginModel : PageModel
 {
@@ -22,12 +22,12 @@ public class LoginModel : PageModel
 
     public IActionResult OnGet()
     {
-        Presets = _presets.Presets
+        Presets = _presets.Presets?
             .Select(x => new SelectListItem(
                 x.Name, 
                 GetPresetValue(x), 
                 x.Name.Equals(_presets.Default, StringComparison.InvariantCulture)))
-            .ToList();
+            .ToList() ?? [];
 
         return Page();
     }
