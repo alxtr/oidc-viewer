@@ -1,0 +1,27 @@
+@page
+@using Microsoft.AspNetCore.Diagnostics
+@model MistCentauri.Oidc.Viewer.Pages.ErrorModel
+@{
+    ViewData["Title"] = "Error";
+
+    var exceptionDetails = HttpContext.Features.Get<IExceptionHandlerPathFeature>();
+    var exception = exceptionDetails?.Error.Message;
+}
+
+<div class="container p-3 mt-4">
+    <div class="row">
+        <div class="col">
+            <div class="card border-danger shadow-sm">
+                <div class="card-header font-monospace">
+                    Error
+                </div>
+                <div class="card-body overflow-x-auto">
+                    <pre>@exception</pre>
+                </div>
+                <div class="card-footer text-end">
+                    <a href="/">Go back</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

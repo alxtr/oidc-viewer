@@ -1,0 +1,173 @@
+﻿@page
+@using System.Net
+@model MistCentauri.Oidc.Viewer.Pages.IndexModel
+@{
+    ViewData["Title"] = WebUtility.HtmlEncode(Model.OidcResponse.Email);
+}
+
+<nav class="navbar p-3">
+    <div class="container-fluid justify-content-end">
+        <a href="/refresh" class="btn btn-outline-secondary" tabindex="-1" role="button" aria-disabled="true"><i class="bi bi-arrow-clockwise"></i></a>
+        <span class="px-1"></span>
+        <form action="/signout" method="post" asp-antiforgery="true">
+            <button class="btn btn-outline-secondary" type="submit">Sign out</button>
+        </form>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col col-xl-6">
+            <div class="p-3">
+                <div class="card shadow-sm">
+                    <div class="card-header font-monospace">
+                        request
+                    </div>
+                    <div class="card-body overflow-x-auto">
+                        <table class="table table-borderless">
+                            <tbody>
+                            <tr>
+                                <td class="col-2"><strong>authority:</strong></td>
+                                <td>
+                                    @Model.OidcResponse.Request.Authority
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-2"><strong>client_id:</strong></td>
+                                <td>
+                                    @Model.OidcResponse.Request.ClientId
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-2"><strong>scope:</strong></td>
+                                <td>
+                                    @foreach (var scope in Model.OidcResponse.Request.Scopes)
+                                    {
+                                        <span class="badge text-bg-secondary">@scope</span>
+                                    }
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col col-xl-6">
+            <div class="p-3">
+                <div class="card shadow-sm">
+                    <div class="card-header font-monospace">
+                        /token
+                    </div>
+                    <div class="card-body overflow-x-auto">
+                        <table class="table table-borderless">
+                            <tbody>
+                            <tr>
+                                <td class="col-2"><strong>access_token:</strong></td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text"
+                                               class="form-control"
+                                               value="@Model.OidcResponse.Response.AccessToken"
+                                               id="access-token-input"
+                                               readonly
+                                               @(string.IsNullOrWhiteSpace(@Model.OidcResponse.Response.AccessToken) ? "disabled" : "")>
+                                        <button
+                                            class="btn btn-outline-secondary"
+                                            type="button"
+                                            data-clipboard-target="#access-token-input"
+                                            mc-toggle
+                                            data-icon-default="bi-clipboard"
+                                            data-icon-toggled="bi-check2"
+                                            @(string.IsNullOrWhiteSpace(@Model.OidcResponse.Response.AccessToken) ? "disabled" : "")>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-2"><strong>refresh_token:</strong></td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text"
+                                               class="form-control"
+                                               value="@Model.OidcResponse.Response.RefreshToken"
+                                               id="refresh-token-input"
+                                               readonly
+                                               @(string.IsNullOrWhiteSpace(Model.OidcResponse.Response.RefreshToken) ? "disabled" : "")>
+                                        <button
+                                            class="btn btn-outline-secondary"
+                                            type="button"
+                                            data-clipboard-target="#refresh-token-input"
+                                            mc-toggle
+                                            data-icon-default="bi-clipboard"
+                                            data-icon-toggled="bi-check2"
+                                            @(string.IsNullOrWhiteSpace(Model.OidcResponse.Response.RefreshToken) ? "disabled" : "")>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-2"><strong>token_type:</strong></td>
+                                <td>
+                                    @Model.OidcResponse.Response.TokenType
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-2"><strong>scope:</strong></td>
+                                <td>
+                                    @foreach (var scope in Model.OidcResponse.Response.Scopes)
+                                    {
+                                        <span class="badge text-bg-secondary">@scope</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-2"><strong>expires_in:</strong></td>
+                                <td>
+                                    @Model.OidcResponse.Response.ExpiresIn <small class="font-monospace ps-2">(at @Model.OidcResponse.Response.ExpiresAt)</small>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col col-xl-6">
+            <div class="p-3">
+                <div class="card shadow-sm">
+                    <div class="card-header font-monospace">
+                        /userinfo
+                    </div>
+                    <div class="card-body overflow-x-auto">
+                        <table class="table table-borderless">
+                            <tbody>
+                            @foreach (var claim in Model.OidcResponse.Claims)
+                            {
+                                <tr>
+                                    <td><strong>@claim.Type</strong></td>
+                                    <td>@claim.Value</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col col-xl-6">
+            <div class="p-3">
+                <div class="card shadow-sm">
+                    <div class="card-header font-monospace">
+                        access_token
+                    </div>
+                    <div class="card-body overflow-x-auto">
+                        <pre>@(Model.OidcResponse.DecodedJwt ?? "Invalid JWT token")</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

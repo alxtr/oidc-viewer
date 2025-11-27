@@ -1,0 +1,110 @@
+@page
+@model MistCentauri.Oidc.Viewer.Pages.LoginModel
+@using MistCentauri.Oidc
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="container p-3 mt-4">
+    @{
+        string? error = HttpContext.Request.Query["error"];
+        if (!string.IsNullOrWhiteSpace(error))
+        {
+            string decodedError = UriBase64.Decode(error);
+            <div class="row">
+                <div class="col">
+                    <div class="alert alert-danger" role="alert">
+                        @decodedError
+                        @{
+                            string? errorDescription = HttpContext.Request.Query["error_description"];
+                            if (!string.IsNullOrWhiteSpace(errorDescription))
+                            {
+                                string decodedErrorDescription = UriBase64.Decode(errorDescription);
+                                <hr>
+                                @decodedErrorDescription
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
+    <div class="row">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-header font-monospace">
+                    OpenID Connect
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-auto">
+                            <label for="presets" class="col-form-label">Presets</label>
+                        </div>
+                        <div class="col">
+                            <select id="presets" class="form-select" asp-items="Model.Presets">
+                                <option value="">Custom</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <hr/>
+
+                    <form action="/signin" method="post" asp-antiforgery="true">
+                        <div class="form-floating mb-3">
+                            <input type="url" class="form-control" id="authority" name="Authority">
+                            <label for="authority">Authority</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="clientId" name="ClientId">
+                            <label for="clientId">Client Id</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="clientSecret" name="ClientSecret">
+                            <label for="clientSecret">Client Secret</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="scope" name="Scope">
+                            <label for="scope">Scope</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Sign in</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const presetsOptions = document.getElementById('presets');
+        const authorityInput = document.getElementById('authority');
+        const clientIdInput = document.getElementById('clientId');
+        const clientSecretInput = document.getElementById('clientSecret');
+        const scopeInput = document.getElementById('scope');
+
+        function updateSelectedPreset(el) {
+            if (el && el.value) {
+                const preset = el.value.split(":").map(x => atob(x));
+
+                authorityInput.value = preset[0];
+                clientIdInput.value = preset[1];
+                clientSecretInput.value = preset[2];
+                scopeInput.value = preset[3];
+            } else {
+                authorityInput.value = "";
+                clientIdInput.value = "";
+                clientSecretInput.value = "";
+                scopeInput.value = "";
+            }
+        }
+
+        authorityInput.value = "";
+        clientIdInput.value = "";
+        clientSecretInput.value = "";
+        scopeInput.value = "";
+
+        presetsOptions.addEventListener('change', (e) => updateSelectedPreset(e.target));
+        updateSelectedPreset(presetsOptions);
+    });
+</script>
