@@ -1,6 +1,6 @@
 services:
   caddy:
-    image: docker.io/library/caddy:latest
+    image: docker.io/caddy:latest
     container_name: oidc-viewer-caddy
     restart: unless-stopped
     cap_add:

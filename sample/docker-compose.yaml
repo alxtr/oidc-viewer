@@ -1,0 +1,9 @@
+services:
+  local-idp:
+    image: docker.io/siocode/local-idp
+    environment:
+      - PORT=8081
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./local-idp.config.yaml:/config.yaml:ro
