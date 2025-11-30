@@ -1,6 +1,6 @@
 services:
   caddy:
-    image: docker.io/caddy:latest
+    image: caddy:2
     container_name: oidc-viewer-caddy
     restart: unless-stopped
     cap_add:
@@ -16,7 +16,7 @@ services:
       - caddy_config:/config
 
   oidc-viewer:
-    image: mist-centauri/oidc-viewer:latest
+    image: mistcentauri/oidc-viewer:latest
     container_name: oidc-viewer
     restart: unless-stopped
     env_file: "presets.env"

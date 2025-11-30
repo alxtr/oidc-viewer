@@ -55,7 +55,7 @@ Simple docker-compose setup:
 ```dockerfile
 services:
   oidc-viewer:
-    image: mist-centauri/oidc-viewer:latest
+    image: mistcentauri/oidc-viewer:latest
     container_name: oidc-viewer
     restart: unless-stopped
     env_file: "presets.env"
@@ -96,7 +96,7 @@ services:
       - caddy_config:/config
 
   oidc-viewer:
-    image: mist-centauri/oidc-viewer:latest
+    image: mistcentauri/oidc-viewer:latest
     container_name: oidc-viewer
     restart: unless-stopped
     env_file: "presets.env"
