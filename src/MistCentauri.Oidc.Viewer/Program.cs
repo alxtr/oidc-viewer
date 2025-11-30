@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using MistCentauri.Oidc;
 using MistCentauri.Oidc.Viewer.ViewModels;
 
@@ -17,15 +18,24 @@ builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(o => o.LoginPath = new PathString("/Login"));
 
-builder.Services.Configure<OidcPresets>(builder.Configuration.GetSection(nameof(OidcPresets)));
-
 builder.Services.AddRazorPages();
+
+builder.Services.Configure<OidcPresets>(builder.Configuration.GetSection(nameof(OidcPresets)));
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto |
+                               ForwardedHeaders.XForwardedHost;
+    options.AllowedHosts.Add("*.internal"); // This is not meant for public or production use.
+    options.KnownProxies.Clear();
+    options.KnownIPNetworks.Clear();
+});
 
 var app = builder.Build();
 
-app.UseExceptionHandler("/Error");
+app.UseForwardedHeaders();
 app.UseHsts();
 app.UseHttpsRedirection();
+app.UseExceptionHandler("/Error");
 app.UseStatusCodePages();
 app.UseAntiforgery();
 app.UseAuthentication();
