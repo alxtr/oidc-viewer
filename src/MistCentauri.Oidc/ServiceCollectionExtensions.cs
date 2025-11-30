@@ -11,6 +11,7 @@ public static class ServiceCollectionExtensions
             services.Configure(configure);
         }
 
+        services.AddDataProtection();
         services.AddHttpClient();
         services.AddMemoryCache(o => o.SizeLimit = 256);
         services.AddSingleton<WellKnownDocumentCache>();

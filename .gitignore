@@ -56,3 +56,6 @@ nunit-*.xml
 **/.idea
 *.user
 *.env
+
+# Local deployment files
+deploy/

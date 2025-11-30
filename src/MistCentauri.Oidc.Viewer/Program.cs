@@ -19,13 +19,17 @@ builder.Services
     .AddCookie(o => o.LoginPath = new PathString("/Login"));
 
 builder.Services.AddRazorPages();
+builder.Services.AddAntiforgery(o =>
+{
+    o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
 
 builder.Services.Configure<OidcPresets>(builder.Configuration.GetSection(nameof(OidcPresets)));
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedProto |
                                ForwardedHeaders.XForwardedHost;
-    options.AllowedHosts.Add("*.internal"); // This is not meant for public or production use.
+    options.AllowedHosts.Add("*.localhost"); // This is not meant for public or production use.
     options.KnownProxies.Clear();
     options.KnownIPNetworks.Clear();
 });
