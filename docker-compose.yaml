@@ -1,0 +1,31 @@
+services:
+  caddy:
+    image: docker.io/caddy:latest
+    container_name: oidc-viewer-caddy
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/certs:/opt/certs:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  oidc-viewer:
+    image: mist-centauri/oidc-viewer:latest
+    container_name: oidc-viewer
+    restart: unless-stopped
+    env_file: "presets.env"
+    volumes:
+      - aspnet_keys:/home/app/.aspnet/DataProtection-Keys
+    ports:
+      - "8080"
+
+volumes:
+  caddy_data:
+  caddy_config:
+  aspnet_keys:

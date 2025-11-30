@@ -1,0 +1,9 @@
+(mkcert-tls) {
+  encode gzip
+  tls /opt/certs/localhost.crt /opt/certs/localhost.key
+}
+
+oidc.localhost {
+  import mkcert-tls
+  reverse_proxy oidc-viewer:8080
+}

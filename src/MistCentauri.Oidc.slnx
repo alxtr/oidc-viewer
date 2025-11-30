@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="MistCentauri.Oidc.Viewer/MistCentauri.Oidc.Viewer.csproj" />
+  <Project Path="MistCentauri.Oidc/MistCentauri.Oidc.csproj" />
+</Solution>

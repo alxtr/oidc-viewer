@@ -1,0 +1,15 @@
+port: 8081
+issuer: http://localhost:8081
+base_url: http://localhost:8081
+users:
+  - id: "1"
+    username: "user1"
+    password: "password1"
+    attributes:
+      role_name: "admin"
+      email: "user1@example.com"
+clients:
+  - id: "client1"
+    audience: "my_api"
+    secret: "super_secret"
+    redirect_uri: "https://oidc.localhost/signin-callback"

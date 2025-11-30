@@ -37,20 +37,20 @@
                     OpenID Connect
                 </div>
                 <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-auto">
-                            <label for="presets" class="col-form-label">Presets</label>
-                        </div>
-                        <div class="col">
-                            <select id="presets" class="form-select" asp-items="Model.Presets">
-                                <option value="">Custom</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <hr/>
-
                     <form action="/signin" method="post" asp-antiforgery="true">
+                        <div class="row mb-3">
+                            <div class="col-auto">
+                                <label for="presets" class="col-form-label">Presets</label>
+                            </div>
+                            <div class="col">
+                                <select id="presets" class="form-select" autocomplete="off" asp-items="Model.Presets">
+                                    <option value="">Custom</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <hr/>
+                    
                         <div class="form-floating mb-3">
                             <input type="url" class="form-control" id="authority" name="Authority">
                             <label for="authority">Authority</label>
