@@ -4,7 +4,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-        <ContainerRepository>mist-centauri/oidc-viewer</ContainerRepository>
+        <ContainerRepository>mistcentauri/oidc-viewer</ContainerRepository>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
