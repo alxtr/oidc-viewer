@@ -1,10 +1,8 @@
-# OIDC Viewer: simple OIDC frontend
+# OIDC Viewer
 
-Simple OpenID Connect compatible token and claims viewer. Its goal is to make easy to validate STS servers configuration
-and fetch an access token for any given scope. It only supports the authorization_code authentication with PKCE always 
-enabled.
+A simple OpenID Connect client to visualize your user tokens and claims. It allows you to provide OIDC-compatible IdP connection settings to fetch a user token. It can be used to visualize, explore and investigation your authorization flow.
 
-> ⚠ This should not be used on a publicly exposed server or as an OIDC sign-in connector. This is meant as a locally self-hosted tool for exploration or investigation.
+> ⚠ This should not be used on a publicly exposed server or as a production OIDC client. This is meant to be used as a locally self-hosted tool for development purpose.
 
 ![screenshot](screenshot_signin.png)
 ![screenshot](screenshot_view.png)
@@ -15,21 +13,11 @@ enabled.
   - [x] `authorization_code` with Proof Key for Code Exchange (PKCE).
   - [ ] `client_credentials`
 
-# Build
-
-Build the Docker image using the following command:
-
-```bash
-dotnet publish --os linux --arch x64 /t:PublishContainer ./src
-```
-
 # Quick deployment guide
 
-> This assumes that your are using the default settings provided in the repository.
+> This assumes that you are using the default settings provided in the repository.
 
-- Build the image locally (see [Build](#Build)).
-
-- Install root CA from [mkcert](https://github.com/FiloSottile/mkcert):
+- **(Optional)** Install root CA from [mkcert](https://github.com/FiloSottile/mkcert):
 
 ```shell
 mkcert --install
@@ -45,12 +33,13 @@ mkcert --cert-file ./deploy/certs/localhost.crt \
 
 - Copy `presets.env.sample` to `presets.env` and set your own presets.
 - Run `docker compose up -d`
-- Browse to https://oidc.localhost
-
+- Open https://oidc.localhost
 
 # Custom usage
 
-Simple docker-compose setup:
+The `DataProtection-Keys` directory is mounted to re-use the same keys across container restarts. As mentioned, this is only for development purpose thus keys are persisted in plain text and should not be considered secure.
+
+## Simple docker compose setup
 
 ```dockerfile
 services:
@@ -68,7 +57,9 @@ volumes:
   aspnet_keys:
 ```
 
-Using caddy as a reverse proxy:
+## Using caddy as a reverse proxy
+
+> *This is the setup provided as a default with the repository*
 
 - Caddyfile
 
@@ -77,6 +68,8 @@ Using caddy as a reverse proxy:
   reverse_proxy oidc-viewer:8080
 }
 ```
+
+- docker-compose.yaml
 
 ```dockerfile
 services:
@@ -110,3 +103,14 @@ volumes:
   caddy_config:
   aspnet_keys:
 ```
+
+# Build
+
+Build the Docker image locally using the following command:
+
+```bash
+dotnet publish --os linux --arch x64 /t:PublishContainer ./src
+```
+
+# License
+OIDC Viewer is MIT licensed. See the [LICENSE](LICENSE) file for details.
