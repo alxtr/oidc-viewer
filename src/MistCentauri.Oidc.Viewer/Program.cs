@@ -30,7 +30,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders = ForwardedHeaders.XForwardedProto |
                                ForwardedHeaders.XForwardedHost;
 
-    var hosts = builder.Configuration["ForwardHeaders:AllowedHosts"]?.Split([';'], StringSplitOptions.RemoveEmptyEntries);
+    var hosts = builder.Configuration["ForwardedHeaders:AllowedHosts"]?.Split([';'], StringSplitOptions.RemoveEmptyEntries);
     options.AllowedHosts = hosts ?? ["*.localhost"]; // This is not meant for public or production use.
     options.KnownProxies.Clear();
     options.KnownIPNetworks.Clear();
